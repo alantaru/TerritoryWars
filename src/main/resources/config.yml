@@ -1,0 +1,86 @@
+# TerritoryWars Configuration
+
+# Economy settings
+economy:
+  # Cost for creating the first territory
+  first-territory-cost: 10000.0
+  
+  # Cost for creating additional territories
+  territory-cost: 5000.0
+  
+  # Tribute settings
+  tribute:
+    # Percentage of territory cost as tribute (0.1 = 10%)
+    per-territory: 0.1
+    
+    # Tribute collection interval in minutes (1440 = 24 hours)
+    interval: 1440
+    
+    # Grace period before territory is lost (in hours)
+    grace-period: 72
+
+# Protection settings
+protection:
+  # Raid hours settings (for RAID_HOURS mode)
+  raid-hours:
+    start-time: "18:00"
+    end-time: "23:00"
+  
+  # Minimum players settings (for MINIMUM_ONLINE_PLAYERS mode)
+  minimum-players:
+    # Percentage of clan members that must be online (30.0 = 30%)
+    online-percentage: 30.0
+
+# Core settings
+core:
+  structure:
+    # Material for core blocks
+    material: "OBSIDIAN"
+    
+    # Size of core structure (2 = 2x2x2)
+    size: 2
+  
+  # How many hits required to destroy core
+  required-hits: 50
+  
+  # How much more resistant than normal blocks
+  resistance-multiplier: 5.0
+  
+  # Minimum time between hits in milliseconds
+  damage-interval: 2000
+  
+  # Damage per hit
+  damage-per-hit: 1
+
+# Dynmap settings
+dynmap:
+  # Enable Dynmap integration
+  enabled: true
+  
+  # Layer name on Dynmap
+  layer-name: "Territórios"
+  
+  # Show adjacency lines between territories
+  show-adjacency: true
+  
+  # Marker style
+  marker-style:
+    fill-color: "#FF0000"
+    fill-opacity: 0.3
+    stroke-color: "#000000"
+    stroke-weight: 3
+  
+  # Adjacency line color
+  adjacency-color: "#FF0000"
+
+# List of blocks that cannot be placed in territories
+territory:
+  blocked-blocks:
+    - "TNT"
+    - "LAVA"
+    - "LAVA_BUCKET"
+    - "FIRE"
+
+# Debug settings
+debug:
+  enabled: false

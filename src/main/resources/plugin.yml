@@ -1,9 +1,62 @@
 name: TerritoryWars
-version: 1.0
+version: '1.0.0'
 main: com.alantaru.territorywars.TerritoryWars
-author: Alantaru
-api-version: 1.20
+api-version: '1.20'
+depend: [SimpleClans, Vault]
+softdepend: [dynmap]
+description: Sistema de Guerra de Territórios integrado com SimpleClans
+
 commands:
-  territorywars:
-    description: Main command for TerritoryWars plugin.
-    usage: /territorywars
+  tw:
+    description: Comando principal do TerritoryWars
+    usage: |
+      §6=== TerritoryWars Comandos ===
+      §e/tw create §f- Cria um território
+      §e/tw info §f- Mostra informações do território
+      §e/tw movecore §f- Move o núcleo
+      §e/tw setname <nome> §f- Define nome do território
+      §e/tw setdesc <desc> §f- Define descrição
+      §e/tw setbanner <url> §f- Define bandeira
+      §e/tw mode <modo> §f- Define modo de proteção
+      §e/tw reload §f- Recarrega o plugin
+    aliases: [territorywars]
+
+permissions:
+  territorywars.*:
+    description: Acesso a todos os comandos do TerritoryWars
+    default: op
+    children:
+      territorywars.create: true
+      territorywars.info: true
+      territorywars.movecore: true
+      territorywars.modify: true
+      territorywars.mode: true
+      territorywars.reload: true
+  
+  territorywars.create:
+    description: Permite criar territórios
+    default: false
+  
+  territorywars.info:
+    description: Permite ver informações de territórios
+    default: true
+  
+  territorywars.movecore:
+    description: Permite mover o núcleo do território
+    default: false
+  
+  territorywars.modify:
+    description: Permite modificar informações do território
+    default: false
+    children:
+      territorywars.info: true
+  
+  territorywars.mode:
+    description: Permite alterar o modo de proteção
+    default: false
+    children:
+      territorywars.info: true
+  
+  territorywars.reload:
+    description: Permite recarregar o plugin
+    default: false

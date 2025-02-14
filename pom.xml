@@ -1,12 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.alantaru</groupId>
-    <artifactId>TerritoryWars</artifactId>
-    <version>1.0</version>
+    <artifactId>territorywars</artifactId>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
+
+    <name>TerritoryWars</name>
+    <description>Sistema de Guerra de Territórios integrado com SimpleClans</description>
 
     <properties>
         <java.version>17</java.version>
@@ -14,21 +18,61 @@
     </properties>
 
     <repositories>
+        <!-- Paper MC -->
         <repository>
-            <id>papermc-repo</id>
+            <id>papermc</id>
             <url>https://repo.papermc.io/repository/maven-public/</url>
         </repository>
+        
+        <!-- Vault -->
         <repository>
-            <id>sonatype</id>
-            <url>https://oss.sonatype.org/content/groups/public/</url>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+        
+        <!-- SimpleClans -->
+        <repository>
+            <id>simpleclans-repo</id>
+            <url>https://repo.roinujnosde.me/releases/</url>
+        </repository>
+        
+        <!-- Dynmap -->
+        <repository>
+            <id>dynmap-repo</id>
+            <url>https://repo.mikeprimm.com/</url>
         </repository>
     </repositories>
 
     <dependencies>
+        <!-- Paper API -->
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
             <version>1.20.4-R0.1-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- SimpleClans -->
+        <dependency>
+            <groupId>net.sacredlabyrinth.phaed.simpleclans</groupId>
+            <artifactId>SimpleClans</artifactId>
+            <version>2.19.1</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Vault -->
+        <dependency>
+            <groupId>com.github.MilkBowl</groupId>
+            <artifactId>VaultAPI</artifactId>
+            <version>1.7</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Dynmap -->
+        <dependency>
+            <groupId>us.dynmap</groupId>
+            <artifactId>dynmap-api</artifactId>
+            <version>3.6-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
@@ -38,7 +82,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
+                <version>3.11.0</version>
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
@@ -47,7 +91,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.4</version>
+                <version>3.5.1</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -61,5 +105,11 @@
                 </executions>
             </plugin>
         </plugins>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
     </build>
 </project>

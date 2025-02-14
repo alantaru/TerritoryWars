@@ -1,2 +1,10 @@
+/workspaces/TerritoryWars/src/main/java/com/alantaru/territorywars/ProtectionMode.java
 /workspaces/TerritoryWars/src/main/java/com/alantaru/territorywars/TerritoryWarsCommand.java
+/workspaces/TerritoryWars/src/main/java/com/alantaru/territorywars/TerritoryManager.java
+/workspaces/TerritoryWars/src/main/java/com/alantaru/territorywars/DynmapManager.java
 /workspaces/TerritoryWars/src/main/java/com/alantaru/territorywars/TerritoryWars.java
+/workspaces/TerritoryWars/src/main/java/com/alantaru/territorywars/CoreStructure.java
+/workspaces/TerritoryWars/src/main/java/com/alantaru/territorywars/CoreBreakListener.java
+/workspaces/TerritoryWars/src/main/java/com/alantaru/territorywars/TerritoryProtectionListener.java
+/workspaces/TerritoryWars/src/main/java/com/alantaru/territorywars/TributeManager.java
+/workspaces/TerritoryWars/src/main/java/com/alantaru/territorywars/Territory.java
