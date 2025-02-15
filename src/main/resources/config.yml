@@ -30,6 +30,10 @@ protection:
   minimum-players:
     # Percentage of clan members that must be online (30.0 = 30%)
     online-percentage: 30.0
+  
+  abandon:
+    # Percentage of territory cost refunded on abandonment (0.5 = 50%)
+    refund-percentage: 0.5
 
 # Core settings
 core:
@@ -80,6 +84,8 @@ territory:
     - "LAVA"
     - "LAVA_BUCKET"
     - "FIRE"
+  gridSize: 256
+  particleType: BARRIER
 
 # Debug settings
 debug:

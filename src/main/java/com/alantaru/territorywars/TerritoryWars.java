@@ -207,4 +207,8 @@ public class TerritoryWars extends JavaPlugin {
     public TributeManager getTributeManager() {
         return tributeManager;
     }
+
+    public DynmapManager getDynmapManager() {
+        return dynmapManager;
+    }
 }

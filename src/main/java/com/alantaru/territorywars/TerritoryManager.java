@@ -76,8 +76,10 @@ public class TerritoryManager {
             return null;
         }
 
-        Territory territory = new Territory(gridX, gridZ, clan, location, cost, 
+        Territory territory = new Territory(gridX, gridZ, clan, location, cost,
             plugin.getCoreStructure().getResistanceMultiplier());
+
+        territory.setName(gridX + "," + gridZ);
 
         if (!plugin.getCoreStructure().isValidLocation(location, territory)) {
             player.sendMessage("§cLocalização inválida para o núcleo!");
@@ -102,11 +104,31 @@ public class TerritoryManager {
         return territory;
     }
 
-    public void removeTerritory(UUID territoryId) {
+    public void removeTerritory(UUID territoryId, boolean abandoned) {
         Territory territory = territories.remove(territoryId);
         if (territory == null) return;
 
-        territory.getCoreBlocks().forEach(loc -> 
+        Economy economy = plugin.getEconomy();
+        Clan clan = territory.getOwner();
+
+        if (abandoned) {
+            double refundPercentage = plugin.getConfig().getDouble("economy.abandon.refund-percentage", 0.5);
+            double refundAmount = territory.getCreationCost() * refundPercentage;
+
+            // Find a leader to give the money to
+            Player leader = Bukkit.getPlayer(clan.getLeaders().get(0).getUniqueId());
+             if (leader != null) {
+                economy.depositPlayer(leader, refundAmount);
+                leader.sendMessage(String.format(
+                    "§aSeu clã abandonou um território e recebeu um reembolso de §f%.2f",
+                    refundAmount
+                ));
+            } else {
+                 plugin.getLogger().warning("Could not find leader to refund territory abandonment cost to.");
+            }
+        }
+
+        territory.getCoreBlocks().forEach(loc ->
             loc.getBlock().setType(org.bukkit.Material.AIR)
         );
 

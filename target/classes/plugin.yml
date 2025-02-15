@@ -19,6 +19,8 @@ commands:
       §e/tw setbanner <url> §f- Define bandeira
       §e/tw mode <modo> §f- Define modo de proteção
       §e/tw reload §f- Recarrega o plugin
+      §e/tw abandon §f- Abandona o territorio atual
+      §e/tw exibir §f- Exibe a borda do territorio atual
     aliases: [territorywars]
 
 permissions:
@@ -32,6 +34,9 @@ permissions:
       territorywars.modify: true
       territorywars.mode: true
       territorywars.reload: true
+      territorywars.abandon: true
+      territorywars.rename: true
+      territorywars.exibir: true
   
   territorywars.create:
     description: Permite criar territórios
@@ -60,3 +65,15 @@ permissions:
   territorywars.reload:
     description: Permite recarregar o plugin
     default: false
+  
+  territorywars.abandon:
+    description: Permite abandonar territórios
+    default: false
+
+  territorywars.rename:
+    description: Permite renomear territórios
+    default: false
+    
+  territorywars.exibir:
+    description: Permite exibir a borda do territorio
+    default: op

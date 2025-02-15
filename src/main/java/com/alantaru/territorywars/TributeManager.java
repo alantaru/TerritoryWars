@@ -124,7 +124,7 @@ public class TributeManager implements Listener {
                 .forEach(player -> player.sendMessage(message));
 
             // Remove territory
-            territoryManager.removeTerritory(territory.getId());
+            territoryManager.removeTerritory(territory.getId(), true);
         }
     }
 

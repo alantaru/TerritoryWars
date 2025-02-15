@@ -21,6 +21,7 @@ public class Territory {
     private String displayName;
     private String description;
     private String banner;
+    private String name;
     private final Set<UUID> adjacentTerritories;
     private final List<Location> coreBlocks;
 
@@ -271,5 +272,13 @@ public class Territory {
 
     public List<Location> getCoreBlocks() {
         return Collections.unmodifiableList(coreBlocks);
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 }

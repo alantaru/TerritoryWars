@@ -1,6 +1,7 @@
 package com.alantaru.territorywars;
 
 import net.sacredlabyrinth.phaed.simpleclans.Clan;
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -51,6 +52,29 @@ public class TerritoryWarsCommand implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 territoryManager.createTerritory(player, player.getLocation());
+                displayParticleBorder(player, territoryManager.getTerritoryAt(player.getLocation()));
+                break;
+
+            case "abandon":
+                if (!player.hasPermission("territorywars.abandon")) {
+                    player.sendMessage("§cVocê não tem permissão para abandonar territórios!");
+                    return true;
+                }
+                if (clan == null) {
+                    player.sendMessage("§cVocê precisa fazer parte de um clã para abandonar territórios!");
+                    return true;
+                }
+                Territory territoryToAbandon = territoryManager.getTerritoryAt(player.getLocation());
+                if (territoryToAbandon == null) {
+                    player.sendMessage("§cVocê não está em um território!");
+                    return true;
+                }
+                if (!territoryToAbandon.getOwner().equals(clan)) {
+                    player.sendMessage("§cEste território não pertence ao seu clã!");
+                    return true;
+                }
+                territoryManager.removeTerritory(territoryToAbandon.getId(), true);
+                player.sendMessage("§aTerritório abandonado com sucesso!");
                 break;
 
             case "info":
@@ -64,6 +88,7 @@ public class TerritoryWarsCommand implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 sendTerritoryInfo(player, territory);
+                displayParticleBorder(player, territory);
                 break;
 
             case "movecore":
@@ -131,12 +156,79 @@ public class TerritoryWarsCommand implements CommandExecutor, TabCompleter {
                 player.sendMessage("§aPlugin recarregado com sucesso!");
                 break;
 
+            case "rename":
+                if (!player.hasPermission("territorywars.rename")) {
+                    player.sendMessage("§cVocê não tem permissão para renomear territórios!");
+                    return true;
+                }
+                if (args.length < 2) {
+                    player.sendMessage("§cUso correto: /tw rename <nome>");
+                    return true;
+                }
+                handleRename(player, clan, String.join(" ", Arrays.copyOfRange(args, 1, args.length)));
+                break;
+
+            case "exibir":
+                 if (!player.hasPermission("territorywars.exibir")) {
+                    player.sendMessage("§cVocê não tem permissão para exibir a borda do território!");
+                    return true;
+                }
+                Territory territoryExibir = territoryManager.getTerritoryAt(player.getLocation());
+                if (territoryExibir == null) {
+                    player.sendMessage("§cVocê não está em um território!");
+                    return true;
+                }
+                displayParticleBorder(player, territoryExibir);
+                break;
+
             default:
                 sendHelp(player);
                 break;
         }
 
         return true;
+    }
+
+    private void displayParticleBorder(Player player, Territory territory) {
+        if (territory == null) {
+            return;
+        }
+
+        // Implement particle display logic here
+        Bukkit.getLogger().info("Displaying particle border for territory: " + territory.getName());
+
+        int minX = territory.getGridX() * plugin.getConfig().getInt("territory.gridSize");
+        int minZ = territory.getGridZ() * plugin.getConfig().getInt("territory.gridSize");
+        int maxX = minX + plugin.getConfig().getInt("territory.gridSize");
+        int maxZ = minZ + plugin.getConfig().getInt("territory.gridSize");
+        int y = player.getLocation().getBlockY();
+        String particleTypeName = plugin.getConfig().getString("territory.particleType", "BARRIER");
+        org.bukkit.Particle particleType = org.bukkit.Particle.valueOf(particleTypeName);
+
+        player.getWorld().spawnParticle(particleType, minX, y, minZ, 1);
+        player.getWorld().spawnParticle(particleType, maxX, y, minZ, 1);
+        player.getWorld().spawnParticle(particleType, minX, y, maxZ, 1);
+        player.getWorld().spawnParticle(particleType, maxX, y, maxZ, 1);
+    }
+
+    private void handleRename(Player player, Clan clan, String name) {
+        Territory territory = territoryManager.getTerritoryAt(player.getLocation());
+        if (territory == null) {
+            player.sendMessage("§cVocê não está em um território!");
+            return;
+        }
+
+        if (clan == null || !clan.equals(territory.getOwner())) {
+            player.sendMessage("§cEste território não pertence ao seu clã!");
+            return;
+        }
+
+        territory.setName(name);
+        territoryManager.saveTerritories();
+        if (plugin.getConfig().getBoolean("dynmap.enabled", true)) {
+            plugin.updateDynmapTerritory(territory);
+        }
+        player.sendMessage("§aTerritório renomeado para: " + name);
     }
 
     private void handleMoveCore(Player player, Clan clan) {
@@ -222,6 +314,13 @@ public class TerritoryWarsCommand implements CommandExecutor, TabCompleter {
         territoryManager.saveTerritories();
         if (plugin.getConfig().getBoolean("dynmap.enabled", true)) {
             plugin.updateDynmapTerritory(territory);
+            plugin.getDynmapManager().updateAdjacencyLines(territory);
+            territory.getAdjacentTerritories().forEach(adjacentId -> {
+                Territory adjacent = territoryManager.getTerritories().get(adjacentId);
+                if (adjacent != null) {
+                    plugin.getDynmapManager().updateAdjacencyLines(adjacent);
+                }
+            });
         }
         player.sendMessage("§aBandeira do território alterada!");
     }
@@ -277,6 +376,10 @@ public class TerritoryWarsCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§e/tw mode <modo> §f- Define o modo de proteção");
         if (player.hasPermission("territorywars.*"))
             player.sendMessage("§e/tw reload §f- Recarrega o plugin");
+        if (player.hasPermission("territorywars.rename"))
+            player.sendMessage("§e/tw rename <nome> §f- Renomeia o territorio");
+        if (player.hasPermission("territorywars.exibir"))
+            player.sendMessage("§e/tw exibir §f- Exibe a borda do territorio");
     }
 
     @Override
@@ -295,6 +398,8 @@ public class TerritoryWarsCommand implements CommandExecutor, TabCompleter {
             }
             if (sender.hasPermission("territorywars.mode")) commands.add("mode");
             if (sender.hasPermission("territorywars.*")) commands.add("reload");
+            if (sender.hasPermission("territorywars.rename")) commands.add("rename");
+            if (sender.hasPermission("territorywars.exibir")) commands.add("exibir");
 
             return commands.stream()
                 .filter(cmd -> cmd.toLowerCase().startsWith(args[0].toLowerCase()))
