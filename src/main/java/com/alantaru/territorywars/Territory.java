@@ -262,7 +262,7 @@ public class Territory {
     }
 
     public Set<UUID> getAdjacentTerritories() {
-        return Collections.unmodifiableSet(adjacentTerritories);
+        return new HashSet<>(adjacentTerritories);
     }
 
     public void addAdjacentTerritory(UUID territoryId) {
