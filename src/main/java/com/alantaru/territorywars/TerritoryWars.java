@@ -8,46 +8,50 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.logging.Level;
 
 public class TerritoryWars extends JavaPlugin {
+    private static TerritoryWars instance;
     private TerritoryManager territoryManager;
     private CoreStructure coreStructure;
     private DynmapManager dynmapManager;
     private TributeManager tributeManager;
+    private DatabaseManager databaseManager;
     private SimpleClans clans;
     private Economy economy;
 
-    @Override
+@Override
     public void onEnable() {
-        // Save default config
-        saveDefaultConfig();
-
-        // Setup dependencies
-        if (!setupDependencies()) {
-            getLogger().severe("Failed to setup required dependencies! Disabling plugin...");
-            Bukkit.getPluginManager().disablePlugin(this);
-            return;
-        }
-
-        // Initialize components in correct order
         try {
+            // Save default config
+            saveDefaultConfig();
+
+            // Setup dependencies
+            if (!setupDependencies()) {
+                getLogger().severe("Failed to setup required dependencies! Disabling plugin...");
+                Bukkit.getPluginManager().disablePlugin(this);
+                return;
+            }
+
+            // Initialize database first
+            this.databaseManager = new DatabaseManager(this);
+            this.databaseManager.initializeDatabase();
+
+            // Initialize components in correct order
             // Core structure must be initialized first as it's needed by Territory
             this.coreStructure = new CoreStructure(this);
-            
+
             // Territory manager is needed by most other components
             this.territoryManager = new TerritoryManager(this);
-            
+
             // Tribute manager depends on territory manager
             this.tributeManager = new TributeManager(this, territoryManager);
 
-            // Register commands
-            TerritoryWarsCommand commandExecutor = new TerritoryWarsCommand(this, territoryManager);
-            getCommand("tw").setExecutor(commandExecutor);
-            getCommand("tw").setTabCompleter(commandExecutor);
+            // Register command
+            registerCommand();
 
             // Register event listeners
             getServer().getPluginManager().registerEvents(
-                new CoreBreakListener(territoryManager, clans, this), this);
+                    new CoreBreakListener(territoryManager, clans, this), this);
             getServer().getPluginManager().registerEvents(
-                new TerritoryProtectionListener(this, territoryManager), this);
+                    new TerritoryProtectionListener(this, territoryManager), this);
             getServer().getPluginManager().registerEvents(tributeManager, this);
 
             // Setup Dynmap if enabled
@@ -57,7 +61,7 @@ public class TerritoryWars extends JavaPlugin {
 
             getLogger().info("TerritoryWars has been enabled successfully!");
         } catch (Exception e) {
-            getLogger().severe("Failed to initialize plugin components!");
+            getLogger().severe("An error occurred during plugin initialization: " + e.getMessage());
             e.printStackTrace();
             Bukkit.getPluginManager().disablePlugin(this);
         }
@@ -65,20 +69,40 @@ public class TerritoryWars extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        if (territoryManager != null) {
-            territoryManager.saveTerritories();
-        }
-        
-        if (tributeManager != null) {
-            tributeManager.disable();
-        }
-        
-        if (dynmapManager != null) {
-            // Dynmap will handle cleanup of markers when plugin is disabled
-            dynmapManager = null;
-        }
+        try {
+            if (territoryManager != null) {
+                territoryManager.saveTerritories();
+            }
 
-        getLogger().info("TerritoryWars has been disabled!");
+            if (tributeManager != null) {
+                tributeManager.disable();
+            }
+
+            if (dynmapManager != null) {
+                // Dynmap will handle cleanup of markers when plugin is disabled
+                dynmapManager = null;
+            }
+
+            if (databaseManager != null) {
+                databaseManager.closeConnection();
+            }
+
+            getLogger().info("TerritoryWars has been disabled!");
+        } catch (Exception e) {
+            getLogger().severe("An error occurred during plugin shutdown: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void registerCommand() {
+        try {
+            TerritoryWarsCommand commandExecutor = new TerritoryWarsCommand(this, territoryManager);
+            getCommand("tw").setExecutor(commandExecutor);
+            getCommand("tw").setTabCompleter(commandExecutor);
+        } catch (Exception e) {
+            getLogger().severe("Error registering command: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     private boolean setupDependencies() {

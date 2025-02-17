@@ -25,7 +25,7 @@ public class Territory {
     private final Set<UUID> adjacentTerritories;
     private final List<Location> coreBlocks;
 
-    public Territory(int gridX, int gridZ, Clan owner, Location coreLocation, double creationCost, double resistanceMultiplier) {
+    public Territory(int gridX, int gridZ, Clan owner, Location coreLocation, double creationCost, double resistanceMultiplier, String name) {
         this.id = UUID.randomUUID();
         this.gridX = gridX;
         this.gridZ = gridZ;
@@ -40,6 +40,7 @@ public class Territory {
         this.displayName = "Território " + gridX + "," + gridZ;
         this.description = "Território pertencente a " + owner.getName();
         this.banner = "";
+        this.name = name;
         this.adjacentTerritories = new HashSet<>();
         this.coreBlocks = new ArrayList<>();
     }
@@ -60,7 +61,7 @@ public class Territory {
         return new int[]{gridX, gridZ};
     }
 
-    public boolean isInGrid(Location location) {
+    public boolean isInside(Location location) {
         // Get chunk coordinates
         int chunkX = location.getBlockX() >> 4;
         int chunkZ = location.getBlockZ() >> 4;
@@ -99,7 +100,7 @@ public class Territory {
     }
 
     public boolean canMoveCoreToLocation(Location newLocation) {
-        if (!isInGrid(newLocation)) {
+        if (!isInside(newLocation)) {
             return false;
         }
 
@@ -107,7 +108,7 @@ public class Territory {
             for (int y = 0; y < 2; y++) {
                 for (int z = 0; z < 2; z++) {
                     Location checkLoc = newLocation.clone().add(x, y, z);
-                    if (!isInGrid(checkLoc)) {
+                    if (!isInside(checkLoc)) {
                         return false;
                     }
                 }
@@ -169,6 +170,11 @@ public class Territory {
     // Getters and Setters
     public UUID getId() {
         return id;
+    }
+
+    public void setId(UUID id) {
+        // This method is intentionally left blank as the ID should not be changed after creation.
+        // If you need to change the ID, consider creating a new Territory object instead.
     }
 
     public int getGridX() {
@@ -270,8 +276,27 @@ public class Territory {
         adjacentTerritories.add(territoryId);
     }
 
+    public void removeAdjacentTerritory(UUID territoryId) {
+        adjacentTerritories.remove(territoryId);
+    }
+
+    public void setAdjacentTerritories(Collection<UUID> territoryIds) {
+        adjacentTerritories.clear();
+        adjacentTerritories.addAll(territoryIds);
+    }
+
     public List<Location> getCoreBlocks() {
         return Collections.unmodifiableList(coreBlocks);
+    }
+
+    public void addCoreBlock(Location location) {
+        coreBlocks.add(location);
+    }
+
+    public void removeCoreBlock(Location location) {
+        coreBlocks.removeIf(loc -> loc.getBlockX() == location.getBlockX() &&
+                                  loc.getBlockY() == location.getBlockY() &&
+                                  loc.getBlockZ() == location.getBlockZ());
     }
 
     public String getName() {

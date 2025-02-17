@@ -30,107 +30,111 @@ public class CoreBreakListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onBlockBreak(BlockBreakEvent event) {
-        if (event.isCancelled()) return;
+        try {
+            if (event.isCancelled()) return;
 
-        Territory territory = territoryManager.getTerritoryAt(event.getBlock().getLocation());
-        if (territory == null) return;
+            Territory territory = territoryManager.getTerritoryAt(event.getBlock().getLocation());
+            if (territory == null) return;
 
-        // Check if block is part of core
-        if (!territory.isBlockPartOfCore(event.getBlock().getLocation())) {
-            return;
-        }
+            // Verifica se o bloco é parte do núcleo
+            if (!territory.isBlockPartOfCore(event.getBlock().getLocation())) {
+                return;
+            }
 
-        Player player = event.getPlayer();
-        Clan attackerClan = clans.getClanManager().getClanByPlayerUniqueId(player.getUniqueId());
+            Player player = event.getPlayer();
+            Clan attackerClan = clans.getClanManager().getClanByPlayerUniqueId(player.getUniqueId());
 
-        // Check if player is in a clan
-        if (attackerClan == null) {
-            event.setCancelled(true);
-            player.sendMessage("§cVocê precisa fazer parte de um clã para atacar territórios!");
-            return;
-        }
+            // Verifica se o jogador pertence a um clã
+            if (attackerClan == null) {
+                event.setCancelled(true);
+                player.sendMessage("§cVocê precisa fazer parte de um clã para atacar territórios!");
+                return;
+            }
 
-        // Check if player has permission
-        if (!attackerClan.isLeader(player.getUniqueId()) && 
-            !plugin.getClans().getPermissionsManager().has(player, "simpleclans.leader.can-attack")) {
-            event.setCancelled(true);
-            player.sendMessage("§cApenas líderes e membros autorizados podem atacar territórios!");
-            return;
-        }
+            // Check if player has permission
+            if (!attackerClan.isLeader(player.getUniqueId()) && 
+                !plugin.getClans().getPermissionsManager().has(player, "simpleclans.leader.can-attack")) {
+                event.setCancelled(true);
+                player.sendMessage("§cApenas líderes e membros autorizados podem atacar territórios!");
+                return;
+            }
 
-        // Check if attacking own territory
-        if (attackerClan.equals(territory.getOwner())) {
-            event.setCancelled(true);
-            player.sendMessage("§cVocê não pode atacar seu próprio território!");
-            return;
-        }
+            // Check if attacking own territory
+            if (attackerClan.equals(territory.getOwner())) {
+                event.setCancelled(true);
+                player.sendMessage("§cVocê não pode atacar seu próprio território!");
+                return;
+            }
 
-        // Check if territory is adjacent to attacker's territory
-        if (!territoryManager.hasAdjacentTerritory(territory, attackerClan)) {
-            event.setCancelled(true);
-            player.sendMessage("§cVocê só pode atacar territórios adjacentes aos seus!");
-            return;
-        }
+            // Check if territory is adjacent to attacker's territory
+            if (!territoryManager.hasAdjacentTerritory(territory, attackerClan)) {
+                event.setCancelled(true);
+                player.sendMessage("§cVocê só pode atacar territórios adjacentes aos seus!");
+                return;
+            }
 
-        // Check protection mode
-        switch (territory.getProtectionMode()) {
-            case RAID_HOURS:
-                if (!isWithinRaidHours()) {
-                    event.setCancelled(true);
-                    player.sendMessage(String.format(
-                        "§cAtaques só são permitidos entre %s e %s!",
-                        plugin.getRaidStartTime(),
-                        plugin.getRaidEndTime()
-                    ));
-                    return;
-                }
-                break;
+            // Check protection mode
+            switch (territory.getProtectionMode()) {
+                case RAID_HOURS:
+                    if (!isWithinRaidHours()) {
+                        event.setCancelled(true);
+                        player.sendMessage(String.format(
+                            "§cAtaques só são permitidos entre %s e %s!",
+                            plugin.getRaidStartTime(),
+                            plugin.getRaidEndTime()
+                        ));
+                        return;
+                    }
+                    break;
 
-            case MINIMUM_ONLINE_PLAYERS:
-                double requiredPercentage = plugin.getOnlinePercentage() / 100.0;
-                int onlineCount = (int) territory.getOwner().getMembers().stream()
-                    .map(member -> plugin.getServer().getPlayer(member.getUniqueId()))
-                    .filter(p -> p != null && p.isOnline())
-                    .count();
-                int totalCount = territory.getOwner().getMembers().size();
-                
-                if (onlineCount < totalCount * requiredPercentage) {
-                    event.setCancelled(true);
-                    player.sendMessage(String.format(
-                        "§c%d%% dos membros do clã defensor precisam estar online!",
-                        (int)(requiredPercentage * 100)
-                    ));
-                    return;
-                }
-                break;
+                case MINIMUM_ONLINE_PLAYERS:
+                    double requiredPercentage = plugin.getOnlinePercentage() / 100.0;
+                    int onlineCount = (int) territory.getOwner().getMembers().stream()
+                        .map(member -> plugin.getServer().getPlayer(member.getUniqueId()))
+                        .filter(p -> p != null && p.isOnline())
+                        .count();
+                    int totalCount = territory.getOwner().getMembers().size();
+                    
+                    if (onlineCount < totalCount * requiredPercentage) {
+                        event.setCancelled(true);
+                        player.sendMessage(String.format(
+                            "§c%d%% dos membros do clã defensor precisam estar online!",
+                            (int)(requiredPercentage * 100)
+                        ));
+                        return;
+                    }
+                    break;
 
-            case INFINITE_WAR:
-                // Always allowed
-                break;
-        }
+                case INFINITE_WAR:
+                    // Always allowed
+                    break;
+            }
 
-        // Check damage interval
-        String key = player.getUniqueId() + ":" + territory.getId();
-        long now = System.currentTimeMillis();
-        Long lastDamage = lastDamageTime.get(key);
-        
-        if (lastDamage != null && now - lastDamage < plugin.getCoreStructure().getDamageInterval()) {
-            event.setCancelled(true);
-            return;
-        }
+            // Check damage interval
+            String key = player.getUniqueId() + ":" + territory.getId();
+            long now = System.currentTimeMillis();
+            Long lastDamage = lastDamageTime.get(key);
+            
+            if (lastDamage != null && now - lastDamage < plugin.getCoreStructure().getDamageInterval()) {
+                event.setCancelled(true);
+                return;
+            }
 
-        // Apply damage
-        event.setCancelled(true); // Cancel vanilla break
-        lastDamageTime.put(key, now);
-        territory.damageCore(plugin.getCoreStructure().getDamagePerHit());
-        territory.setLastDamageTime(now);
+            // Apply damage
+            event.setCancelled(true); // Cancel vanilla break
+            lastDamageTime.put(key, now);
+            territory.damageCore(plugin.getCoreStructure().getDamagePerHit());
+            territory.setLastDamageTime(now);
 
-        // Broadcast attack alert
-        territory.broadcastAttackAlert(plugin);
+            // Broadcast attack alert
+            territory.broadcastAttackAlert(plugin);
 
-        // Check if core is destroyed
-        if (territory.isCoreDestroyed()) {
-            handleCoreDestroyed(territory, attackerClan);
+            // Check if core is destroyed
+            if (territory.isCoreDestroyed()) {
+                handleCoreDestroyed(territory, attackerClan);
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("Error handling block break event: " + e.getMessage());
         }
     }
 

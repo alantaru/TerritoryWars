@@ -3,6 +3,7 @@ package com.alantaru.territorywars;
 import com.google.gson.*;
 import net.milkbowl.vault.economy.Economy;
 import net.sacredlabyrinth.phaed.simpleclans.Clan;
+import net.sacredlabyrinth.phaed.simpleclans.managers.ClanManager;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -36,7 +37,7 @@ public class TerritoryManager {
         loadTerritories();
     }
 
-    public Territory createTerritory(Player player, Location location) {
+    public Territory createTerritory(Player player, Location location, String territoryName) {
         Clan clan = plugin.getClans().getClanManager().getClanByPlayerUniqueId(player.getUniqueId());
         
         if (clan == null) {
@@ -77,7 +78,7 @@ public class TerritoryManager {
         }
 
         Territory territory = new Territory(gridX, gridZ, clan, location, cost,
-            plugin.getCoreStructure().getResistanceMultiplier());
+            plugin.getCoreStructure().getResistanceMultiplier(), territoryName);
 
         territory.setName(gridX + "," + gridZ);
 
@@ -220,6 +221,23 @@ public class TerritoryManager {
         return Collections.unmodifiableMap(territories);
     }
 
+    public void reload() {
+        loadTerritories();
+    }
+
+    public Territory getTerritoryByName(String name) {
+        for (Territory territory : territories.values()) {
+            if (territory.getName().equalsIgnoreCase(name)) {
+                return territory;
+            }
+        }
+        return null;
+    }
+
+    public void save() {
+        saveTerritories();
+    }
+
     private static class LocationAdapter implements JsonSerializer<Location>, JsonDeserializer<Location> {
         @Override
         public JsonElement serialize(Location location, Type type, JsonSerializationContext context) {
@@ -277,7 +295,8 @@ public class TerritoryManager {
             int gridZ = json.get("gridZ").getAsInt();
             
             String clanTag = json.get("clanId").getAsString();
-            Clan clan = plugin.getClans().getClanManager().getClan(clanTag);
+            ClanManager clanManager = plugin.getClans().getClanManager();
+            Clan clan = clanManager.getClan(clanTag);
             if (clan == null) {
                 throw new JsonParseException("Clan not found: " + clanTag);
             }
@@ -286,7 +305,7 @@ public class TerritoryManager {
             double creationCost = json.get("creationCost").getAsDouble();
             double resistanceMultiplier = json.get("resistanceMultiplier").getAsDouble();
 
-            Territory territory = new Territory(gridX, gridZ, clan, coreLoc, creationCost, resistanceMultiplier);
+            Territory territory = new Territory(gridX, gridZ, clan, coreLoc, creationCost, resistanceMultiplier, "dummy");
             territory.setProtectionMode(ProtectionMode.valueOf(json.get("protectionMode").getAsString()));
             territory.setCoreHealth(json.get("coreHealth").getAsInt());
             territory.setLastDamageTime(json.get("lastDamageTime").getAsLong());

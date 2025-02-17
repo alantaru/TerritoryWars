@@ -1,5 +1,5 @@
 name: TerritoryWars
-version: '1.0.0'
+version: '1.0.3'
 main: com.alantaru.territorywars.TerritoryWars
 api-version: '1.20'
 depend: [SimpleClans, Vault]
@@ -16,12 +16,15 @@ commands:
       §e/tw movecore §f- Move o núcleo
       §e/tw setname <nome> §f- Define nome do território
       §e/tw setdesc <desc> §f- Define descrição
+      §e/tw setdisplayname <territoryName> <displayName> §f- Define o nome de exibição do território
+      §e/tw setdescription <territoryName> <description> §f- Define a descrição do território
       §e/tw setbanner <url> §f- Define bandeira
       §e/tw mode <modo> §f- Define modo de proteção
       §e/tw reload §f- Recarrega o plugin
       §e/tw abandon §f- Abandona o territorio atual
       §e/tw exibir §f- Exibe a borda do territorio atual
-    aliases: [territorywars]
+      §e/tw list §f- Lista todos os territórios
+      §e/tw clanlist <clanTag> §f- Lista todos os territórios de um clã
 
 permissions:
   territorywars.*:
@@ -37,7 +40,8 @@ permissions:
       territorywars.abandon: true
       territorywars.rename: true
       territorywars.exibir: true
-  
+      territorywars.list: true
+
   territorywars.create:
     description: Permite criar territórios
     default: false
@@ -77,3 +81,11 @@ permissions:
   territorywars.exibir:
     description: Permite exibir a borda do territorio
     default: op
+
+  territorywars.list:
+    description: Permite listar os territorios
+    default: true
+
+  territorywars.clanlist:
+    description: Permite listar os territorios de um clã
+    default: true

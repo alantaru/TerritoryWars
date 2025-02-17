@@ -55,7 +55,7 @@ public class CoreStructure {
                     Location checkLoc = location.clone().add(x, y, z);
                     
                     // Check if location is within territory bounds
-                    if (!territory.isInGrid(checkLoc)) {
+                    if (!territory.isInside(checkLoc)) {
                         return false;
                     }
                     
