@@ -47,7 +47,7 @@ public class CoreBreakListener implements Listener {
             // Verifica se o jogador pertence a um clã
             if (attackerClan == null) {
                 event.setCancelled(true);
-                player.sendMessage("§cVocê precisa fazer parte de um clã para atacar territórios!");
+                player.sendMessage(plugin.getMessage("attack_adjacent_territories_only"));
                 return;
             }
 
@@ -55,21 +55,21 @@ public class CoreBreakListener implements Listener {
             if (!attackerClan.isLeader(player.getUniqueId()) && 
                 !plugin.getClans().getPermissionsManager().has(player, "simpleclans.leader.can-attack")) {
                 event.setCancelled(true);
-                player.sendMessage("§cApenas líderes e membros autorizados podem atacar territórios!");
+                player.sendMessage(plugin.getMessage("leader_needed_to_attack"));
                 return;
             }
 
             // Check if attacking own territory
             if (attackerClan.equals(territory.getOwner())) {
                 event.setCancelled(true);
-                player.sendMessage("§cVocê não pode atacar seu próprio território!");
+                player.sendMessage(plugin.getMessage("cannot_attack_own_territory"));
                 return;
             }
 
             // Check if territory is adjacent to attacker's territory
             if (!territoryManager.hasAdjacentTerritory(territory, attackerClan)) {
                 event.setCancelled(true);
-                player.sendMessage("§cVocê só pode atacar territórios adjacentes aos seus!");
+                player.sendMessage(plugin.getMessage("attack_adjacent_territories_only"));
                 return;
             }
 
@@ -79,7 +79,7 @@ public class CoreBreakListener implements Listener {
                     if (!isWithinRaidHours()) {
                         event.setCancelled(true);
                         player.sendMessage(String.format(
-                            "§cAtaques só são permitidos entre %s e %s!",
+                            plugin.getMessage("raid_hours_only"),
                             plugin.getRaidStartTime(),
                             plugin.getRaidEndTime()
                         ));
@@ -98,8 +98,8 @@ public class CoreBreakListener implements Listener {
                     if (onlineCount < totalCount * requiredPercentage) {
                         event.setCancelled(true);
                         player.sendMessage(String.format(
-                            "§c%d%% dos membros do clã defensor precisam estar online!",
-                            (int)(requiredPercentage * 100)
+                            plugin.getMessage("minimum_online_percentage"),
+                            (int) (requiredPercentage * 100)
                         ));
                         return;
                     }
@@ -134,7 +134,7 @@ public class CoreBreakListener implements Listener {
                 handleCoreDestroyed(territory, attackerClan);
             }
         } catch (Exception e) {
-            plugin.getLogger().warning("Error handling block break event: " + e.getMessage());
+            plugin.getLogger().warning(plugin.getMessage("error_handling_block_break_event") + e.getMessage());
         }
     }
 
@@ -161,15 +161,15 @@ public class CoreBreakListener implements Listener {
             
             return now.after(start) && now.before(end);
         } catch (ParseException e) {
-            plugin.getLogger().warning("Error parsing raid hours: " + e.getMessage());
+            plugin.getLogger().warning(plugin.getMessage("error_parsing_raid_hours") + e.getMessage());
             return false;
         }
     }
 
     private void handleCoreDestroyed(Territory territory, Clan attackerClan) {
         // Broadcast conquest message
-        String message = String.format(
-            "§c⚠ O território em X:%d Z:%d foi conquistado pelo clã %s!",
+       String message = String.format(
+            plugin.getMessage("territory_conquered"),
             territory.getGridX() * 3 * 16,
             territory.getGridZ() * 3 * 16,
             attackerClan.getName()

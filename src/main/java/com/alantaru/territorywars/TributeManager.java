@@ -43,7 +43,7 @@ public class TributeManager implements Listener {
         }, interval, interval);
     }
 
-    private void collectTribute(Territory territory) {
+    public void collectTribute(Territory territory) {
         Clan clan = territory.getOwner();
         if (clan == null) return;
 

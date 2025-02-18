@@ -35,14 +35,14 @@ public class TerritoryProtectionListener implements Listener {
         // Check blocked blocks
         if (blockedBlocks.contains(event.getBlock().getType().name())) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage("§cEste tipo de bloco não pode ser colocado em territórios!");
+            event.getPlayer().sendMessage(plugin.getMessage("cannot_place_block_type"));
             return;
         }
 
         // Check player permission
         if (!hasPermission(event.getPlayer(), territory)) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage("§cVocê não pode construir neste território!");
+            event.getPlayer().sendMessage(plugin.getMessage("cannot_build_in_territory"));
         }
     }
 
@@ -59,7 +59,7 @@ public class TerritoryProtectionListener implements Listener {
 
         if (!hasPermission(event.getPlayer(), territory)) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage("§cVocê não pode quebrar blocos neste território!");
+            event.getPlayer().sendMessage(plugin.getMessage("cannot_break_blocks_in_territory"));
         }
     }
 
@@ -137,7 +137,7 @@ public class TerritoryProtectionListener implements Listener {
 
         if (!hasPermission(event.getPlayer(), territory)) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage("§cVocê não pode usar baldes neste território!");
+            event.getPlayer().sendMessage(plugin.getMessage("cannot_use_buckets_in_territory"));
         }
     }
 
@@ -149,7 +149,7 @@ public class TerritoryProtectionListener implements Listener {
 
         if (!hasPermission(event.getPlayer(), territory)) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage("§cVocê não pode usar baldes neste território!");
+            event.getPlayer().sendMessage(plugin.getMessage("cannot_use_buckets_in_territory"));
         }
     }
 
@@ -163,7 +163,7 @@ public class TerritoryProtectionListener implements Listener {
             Player player = (Player) event.getRemover();
             if (!hasPermission(player, territory)) {
                 event.setCancelled(true);
-                player.sendMessage("§cVocê não pode quebrar decorações neste território!");
+                player.sendMessage(plugin.getMessage("cannot_break_decorations_in_territory"));
             }
         } else {
             event.setCancelled(true);
@@ -188,7 +188,7 @@ public class TerritoryProtectionListener implements Listener {
 
         if (damager != null && !hasPermission(damager, territory)) {
             event.setCancelled(true);
-            damager.sendMessage("§cVocê não pode causar dano neste território!");
+            damager.sendMessage(plugin.getMessage("cannot_cause_damage_in_territory"));
         }
     }
 

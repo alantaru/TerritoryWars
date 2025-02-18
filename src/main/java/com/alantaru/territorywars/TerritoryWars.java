@@ -4,28 +4,49 @@ import net.milkbowl.vault.economy.Economy;
 import net.sacredlabyrinth.phaed.simpleclans.SimpleClans;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.RegisteredServiceProvider;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 import java.util.logging.Level;
+
+import org.bukkit.ChatColor;
 
 public class TerritoryWars extends JavaPlugin {
     private static TerritoryWars instance;
     private TerritoryManager territoryManager;
+
+    public static TerritoryWars getInstance() {
+        return instance;
+    }
+
     private CoreStructure coreStructure;
     private DynmapManager dynmapManager;
     private TributeManager tributeManager;
     private DatabaseManager databaseManager;
     private SimpleClans clans;
     private Economy economy;
+    private FileConfiguration messagesConfig;
 
-@Override
+    @Override
     public void onEnable() {
+        instance = this;
         try {
             // Save default config
             saveDefaultConfig();
 
+            // Load messages config
+            loadMessagesConfig();
+
             // Setup dependencies
             if (!setupDependencies()) {
-                getLogger().severe("Failed to setup required dependencies! Disabling plugin...");
+                getLogger().severe(getMessage("failed_dependencies"));
                 Bukkit.getPluginManager().disablePlugin(this);
                 return;
             }
@@ -59,7 +80,7 @@ public class TerritoryWars extends JavaPlugin {
                 setupDynmap();
             }
 
-            getLogger().info("TerritoryWars has been enabled successfully!");
+            getLogger().info(getMessage("plugin_enabled"));
         } catch (Exception e) {
             getLogger().severe("An error occurred during plugin initialization: " + e.getMessage());
             e.printStackTrace();
@@ -87,7 +108,7 @@ public class TerritoryWars extends JavaPlugin {
                 databaseManager.closeConnection();
             }
 
-            getLogger().info("TerritoryWars has been disabled!");
+            getLogger().info(getMessage("plugin_disabled"));
         } catch (Exception e) {
             getLogger().severe("An error occurred during plugin shutdown: " + e.getMessage());
             e.printStackTrace();
@@ -109,13 +130,13 @@ public class TerritoryWars extends JavaPlugin {
         // Setup SimpleClans
         clans = (SimpleClans) Bukkit.getPluginManager().getPlugin("SimpleClans");
         if (clans == null) {
-            getLogger().severe("SimpleClans not found!");
+            getLogger().severe(getMessage("simpleclans_not_found"));
             return false;
         }
 
         // Setup Vault Economy
         if (!setupEconomy()) {
-            getLogger().severe("Vault Economy not found!");
+            getLogger().severe(getMessage("vault_economy_not_found"));
             return false;
         }
 
@@ -139,13 +160,13 @@ public class TerritoryWars extends JavaPlugin {
 
     private void setupDynmap() {
         if (Bukkit.getPluginManager().getPlugin("dynmap") == null) {
-            getLogger().warning("Dynmap not found, territory visualization disabled.");
+            getLogger().warning(getMessage("dynmap_not_found"));
             return;
         }
 
         this.dynmapManager = new DynmapManager(this, territoryManager);
         if (!dynmapManager.isEnabled()) {
-            getLogger().warning("Failed to initialize Dynmap integration.");
+            getLogger().warning(getMessage("dynmap_failed_init"));
             dynmapManager = null;
         }
     }
@@ -234,5 +255,30 @@ public class TerritoryWars extends JavaPlugin {
 
     public DynmapManager getDynmapManager() {
         return dynmapManager;
+    }
+
+    private void loadMessagesConfig() {
+        File messagesFile = new File(getDataFolder(), "messages.yml");
+        if (!messagesFile.exists()) {
+            saveResource("messages.yml", false);
+        }
+
+        messagesConfig = YamlConfiguration.loadConfiguration(messagesFile);
+
+        // Load default messages from the resource
+        try {
+            InputStream defConfigStream = getResource("messages.yml");
+            if (defConfigStream != null) {
+                YamlConfiguration defConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(defConfigStream, StandardCharsets.UTF_8));
+                messagesConfig.setDefaults(defConfig);
+            }
+        } catch (Exception e) {
+            getLogger().severe("Could not load default messages.yml: " + e.getMessage());
+        }
+    }
+
+    public String getMessage(String key) {
+        return ChatColor.translateAlternateColorCodes('&',
+            Objects.requireNonNull(messagesConfig.getString(key, "&cMissing message key: " + key)));
     }
 }

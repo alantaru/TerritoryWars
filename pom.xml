@@ -6,7 +6,7 @@
 
     <groupId>com.alantaru</groupId>
     <artifactId>territorywars</artifactId>
-    <version>1.0.3</version>
+    <version>1.0.6</version>
     <packaging>jar</packaging>
 
     <name>TerritoryWars</name>
@@ -33,7 +33,18 @@
         <!-- SimpleClans -->
         <repository>
             <id>simpleclans-repo</id>
-            <url>https://repo.roinujnosde.me/releases/</url>
+            <url>https://repo.roinujnosde.me/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+
+        <repository>
+            <id>md-5</id>
+            <url>https://repo.md-5.net/content/groups/public/</url>
         </repository>
         
         <!-- Dynmap -->
@@ -42,6 +53,13 @@
             <url>https://repo.mikeprimm.com/</url>
         </repository>
     </repositories>
+    
+    <pluginRepositories>
+        <pluginRepository>
+            <id>simpleclans-repo</id>
+            <url>https://repo.roinujnosde.me/releases/</url>
+        </pluginRepository>
+    </pluginRepositories>
 
     <dependencies>
         <!-- Spigot API -->
@@ -91,6 +109,17 @@
         </dependency>
     </dependencies>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>net.sacredlabyrinth.phaed.simpleclans</groupId>
+                <artifactId>SimpleClans</artifactId>
+                <version>2.19.2</version>
+                <scope>provided</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <build>
         <plugins>
             <plugin>
@@ -114,6 +143,38 @@
                         </goals>
                         <configuration>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <artifactSet>
+                                <excludes>
+                                     <exclude>org.xerial:sqlite-jdbc</exclude>
+                                     <exclude>org.flywaydb:flyway-core</exclude>
+                                     <exclude>com.fasterxml.jackson.dataformat:jackson-dataformat-toml</exclude>
+                                     <exclude>com.fasterxml.jackson.core:jackson-databind</exclude>
+                                     <exclude>com.fasterxml.jackson.core:jackson-annotations</exclude>
+                                     <exclude>com.fasterxml.jackson.core:jackson-core</exclude>
+                                </excludes>
+                            </artifactSet>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <executions>
+                    <execution>
+                        <id>default-resources</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>resources</goal>
+                        </goals>
+                        <configuration>
+                            <resources>
+                                <resource>
+                                    <directory>src/main/resources</directory>
+                                    <filtering>true</filtering>
+                                </resource>
+                            </resources>
                         </configuration>
                     </execution>
                 </executions>

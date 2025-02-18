@@ -24,7 +24,7 @@ public class TerritoryWarsCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage("Available subcommands: create, delete, list, info, reload, setdisplayname, setdescription");
+            sender.sendMessage(plugin.getMessage("available_subcommands"));
             return true;
         }
 
@@ -36,18 +36,18 @@ public class TerritoryWarsCommand implements CommandExecutor, TabCompleter {
             }
             plugin.getTributeManager().reload();
 
-            sender.sendMessage("TerritoryWars configuration reloaded.");
+            sender.sendMessage(plugin.getMessage("territorywars_reloaded"));
             return true;
         }
 
         if (args[0].equalsIgnoreCase("setdisplayname")) {
             if (!(sender instanceof Player)) {
-                sender.sendMessage("This command can only be used by a player.");
+                sender.sendMessage(plugin.getMessage("command_only_by_player"));
                 return true;
             }
 
             if (args.length < 3) {
-                sender.sendMessage("§cUsage: /tw setdisplayname <territoryName> <displayName>");
+                sender.sendMessage(plugin.getMessage("setdisplayname_usage"));
                 return true;
             }
 
@@ -58,30 +58,31 @@ public class TerritoryWarsCommand implements CommandExecutor, TabCompleter {
                 displayName += " " + args[i];
             }
 
-
             Territory territory = territoryManager.getTerritoryByName(territoryName);
 
             if (territory == null) {
-                sender.sendMessage("§cTerritory not found.");
+                sender.sendMessage(plugin.getMessage("territory_not_found"));
                 return true;
             }
 
             territory.setDisplayName(displayName);
             territoryManager.save();
 
-            sender.sendMessage("§aDisplay name for territory '" + territoryName + "' set to '" + displayName + "'.");
+            sender.sendMessage(plugin.getMessage("setdisplayname_success")
+                    .replace("{territoryName}", territoryName)
+                    .replace("{displayName}", displayName));
             return true;
 
         }
 
         if (args[0].equalsIgnoreCase("setdescription")) {
             if (!(sender instanceof Player)) {
-                sender.sendMessage("This command can only be used by a player.");
+                sender.sendMessage(plugin.getMessage("command_only_by_player"));
                 return true;
             }
 
             if (args.length < 3) {
-                sender.sendMessage("§cUsage: /tw setdescription <territoryName> <description>");
+                sender.sendMessage(plugin.getMessage("setdescription_usage"));
                 return true;
             }
 
@@ -94,19 +95,21 @@ public class TerritoryWarsCommand implements CommandExecutor, TabCompleter {
 
             Territory territory = territoryManager.getTerritoryByName(territoryName);
             if (territory == null) {
-                sender.sendMessage("§cTerritory not found.");
+                sender.sendMessage(plugin.getMessage("territory_not_found"));
                 return true;
             }
 
             territory.setDescription(description);
             territoryManager.save();
-            sender.sendMessage("§aDescription for territory '" + territoryName + "' set to '" + description + "'.");
+            sender.sendMessage(plugin.getMessage("setdescription_success")
+                    .replace("{territoryName}", territoryName)
+                    .replace("{description}", description));
             return true;
         }
 
         if (args[0].equalsIgnoreCase("info")) {
             if (!(sender instanceof Player)) {
-                sender.sendMessage("This command can only be used by a player.");
+                sender.sendMessage(plugin.getMessage("command_only_by_player"));
                 return true;
             }
 
@@ -118,7 +121,7 @@ public class TerritoryWarsCommand implements CommandExecutor, TabCompleter {
                     String name = args[1];
                     territory = territoryManager.getTerritoryByName(name);
                 } catch (IllegalArgumentException e) {
-                    sender.sendMessage("§cTerritory not found.");
+                    sender.sendMessage(plugin.getMessage("territory_not_found"));
                     return true;
                 }
             } else {
@@ -126,12 +129,12 @@ public class TerritoryWarsCommand implements CommandExecutor, TabCompleter {
             }
 
             if (territory == null) {
-                sender.sendMessage("§cTerritory not found.");
+                sender.sendMessage(plugin.getMessage("territory_not_found"));
                 return true;
             }
 
-            sender.sendMessage("§6--- Territory Info ---");
-            sender.sendMessage("§eID: §f" + territory.getName());
+            sender.sendMessage(plugin.getMessage("territory_info"));
+            sender.sendMessage(plugin.getMessage("territory_id").replace("{territoryName}", territory.getName()));
             sender.sendMessage("§eClan: §f" + territory.getOwner().getName());
             sender.sendMessage("§eGrid: §f" + territory.getGridX() + ", " + territory.getGridZ());
             sender.sendMessage("§eCore Health: §f" + territory.getCoreHealth());
@@ -150,24 +153,24 @@ public class TerritoryWarsCommand implements CommandExecutor, TabCompleter {
 
         if (args[0].equalsIgnoreCase("create")) {
             if (!(sender instanceof Player)) {
-                sender.sendMessage("This command can only be used by a player.");
+                sender.sendMessage(plugin.getMessage("command_only_by_player"));
                 return true;
             }
 
             Player player = (Player) sender;
 
             if (!player.hasPermission("territorywars.create")) {
-                sender.sendMessage("§cYou do not have permission to create territories.");
+                sender.sendMessage(plugin.getMessage("no_permission_create"));
                 return true;
             }
 
             if (territoryManager.getTerritoryAt(player.getLocation()) != null) {
-                sender.sendMessage("§cA territory already exists at your location.");
+                sender.sendMessage(plugin.getMessage("territory_exists"));
                 return true;
             }
 
             if (args.length < 3) {
-                sender.sendMessage("§cUsage: /tw create <clan> <territoryName>");
+                sender.sendMessage(plugin.getMessage("create_usage"));
                 return true;
             }
 
@@ -178,39 +181,41 @@ public class TerritoryWarsCommand implements CommandExecutor, TabCompleter {
 
             try {
                 if (!(sender instanceof Player)) {
-                    sender.sendMessage("§cThis command can only be used by a player.");
+                    sender.sendMessage(plugin.getMessage("command_only_by_player"));
                     return true;
                 }
                 Player playerSender = (Player) sender;
                 Territory territory = territoryManager.createTerritory(playerSender, player.getLocation(), territoryName);
-                if(territory != null) {
-                    sender.sendMessage("§aTerritory '" + territoryName + "' created successfully for clan '" + clanName + "'.");
+                if (territory != null) {
+                    sender.sendMessage(plugin.getMessage("territory_created")
+                            .replace("{territoryName}", territoryName)
+                            .replace("{clanName}", clanName));
                 } else {
-                    sender.sendMessage("§cTerritory creation failed.");
+                    sender.sendMessage(plugin.getMessage("territory_creation_failed"));
                 }
 
             } catch (IllegalArgumentException e) {
-                    sender.sendMessage("§c" + e.getMessage());
-                }
+                sender.sendMessage(plugin.getMessage("territory_creation_failed"));
+            }
 
             return true;
         }
 
         if (args[0].equalsIgnoreCase("delete")) {
             if (!(sender instanceof Player)) {
-                sender.sendMessage("This command can only be used by a player.");
+                sender.sendMessage(plugin.getMessage("command_only_by_player"));
                 return true;
             }
 
             Player player = (Player) sender;
 
             if (!player.hasPermission("territorywars.delete")) {
-                sender.sendMessage("§cYou do not have permission to delete territories.");
+                sender.sendMessage(plugin.getMessage("no_permission_delete"));
                 return true;
             }
 
             if (args.length < 2) {
-                sender.sendMessage("§cUsage: /tw delete <territoryName>");
+                sender.sendMessage(plugin.getMessage("delete_usage"));
                 return true;
             }
 
@@ -218,23 +223,24 @@ public class TerritoryWarsCommand implements CommandExecutor, TabCompleter {
             Territory territory = territoryManager.getTerritoryByName(territoryName);
 
             if (territory == null) {
-                sender.sendMessage("§cTerritory not found.");
+                sender.sendMessage(plugin.getMessage("territory_not_found"));
                 return true;
             }
 
             territoryManager.removeTerritory(territory.getId(), true);
-            sender.sendMessage("§aTerritory '" + territoryName + "' deleted successfully.");
+            sender.sendMessage(plugin.getMessage("territory_deleted")
+                    .replace("{territoryName}", territoryName));
 
             return true;
         }
 
         if (args[0].equalsIgnoreCase("list")) {
             if (!sender.hasPermission("territorywars.list")) {
-                sender.sendMessage("§cYou do not have permission to list territories.");
+                sender.sendMessage(plugin.getMessage("no_permission_list"));
                 return true;
             }
 
-            sender.sendMessage("§6--- List of Territories ---");
+            sender.sendMessage(plugin.getMessage("list_territories"));
             territoryManager.getTerritories().values().forEach(territory -> {
                 sender.sendMessage("§e" + territory.getName() + "§f - Owner: §e" + territory.getOwner().getName());
             });
@@ -244,14 +250,14 @@ public class TerritoryWarsCommand implements CommandExecutor, TabCompleter {
 
         if (args[0].equalsIgnoreCase("capture")) {
             if (!(sender instanceof Player)) {
-                sender.sendMessage("This command can only be used by a player.");
+                sender.sendMessage(plugin.getMessage("command_only_by_player"));
                 return true;
             }
 
             Player player = (Player) sender;
 
             if (args.length < 2) {
-                sender.sendMessage("§cUsage: /tw capture <territoryName>");
+                sender.sendMessage(plugin.getMessage("capture_usage"));
                 return true;
             }
 
@@ -260,7 +266,7 @@ public class TerritoryWarsCommand implements CommandExecutor, TabCompleter {
             Territory territory = territoryManager.getTerritoryByName(territoryName);
 
             if (territory == null) {
-                sender.sendMessage("§cTerritory not found.");
+                sender.sendMessage(plugin.getMessage("territory_not_found"));
                 return true;
             }
 
@@ -287,8 +293,8 @@ public class TerritoryWarsCommand implements CommandExecutor, TabCompleter {
             return List.of("create", "delete", "list", "info", "reload", "setdisplayname", "setdescription", "capture");
         } else if (args.length == 2 && args[0].equalsIgnoreCase("info")) {
             return territoryManager.getTerritories().values().stream()
-                .map(Territory::getName)
-                .collect(Collectors.toList());
+                    .map(Territory::getName)
+                    .collect(Collectors.toList());
         } else if (args.length == 2 && args[0].equalsIgnoreCase("delete")) {
             return territoryManager.getTerritories().values().stream()
                     .map(Territory::getName)

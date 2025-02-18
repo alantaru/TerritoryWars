@@ -11,10 +11,12 @@ import org.bukkit.event.player.PlayerMoveEvent;
 
 public class TerritoryListener implements Listener {
 
+    private final TerritoryWars plugin;
     private final TerritoryManager territoryManager;
     private final SimpleClans clans;
 
-    public TerritoryListener(TerritoryManager territoryManager, SimpleClans clans) {
+    public TerritoryListener(TerritoryWars plugin, TerritoryManager territoryManager, SimpleClans clans) {
+        this.plugin = plugin;
         this.territoryManager = territoryManager;
         this.clans = clans;
     }
@@ -39,21 +41,21 @@ public class TerritoryListener implements Listener {
         if (fromTerritory != null && toTerritory != null) {
             if (fromTerritory != toTerritory) {
                 // Both territories belong to clans
-                if(fromTerritory.getOwner() != null && toTerritory.getOwner() != null){
-                    //From own territory to enemy territory
+                if (fromTerritory.getOwner() != null && toTerritory.getOwner() != null) {
+                    // From own territory to enemy territory
                     if (fromTerritory.getOwner().equals(playerClan) && !toTerritory.getOwner().equals(playerClan)) {
-                        sendTitle(player, "§cTerritório Inimigo", "§7" + toTerritory.getDisplayName());
-                    //From enemy territory to own territory
+                        sendTitle(player, plugin.getMessage("enemy_territory_title"), "§7" + toTerritory.getDisplayName());
+                        //From enemy territory to own territory
                     } else if (!fromTerritory.getOwner().equals(playerClan) && toTerritory.getOwner().equals(playerClan)) {
-                        sendTitle(player, "§aTerritório Aliado", "§7" + toTerritory.getDisplayName());
+                        sendTitle(player, plugin.getMessage("ally_territory_title"), "§7" + toTerritory.getDisplayName());
                     }
                     //From enemy to another enemy
-                    else if (!fromTerritory.getOwner().equals(playerClan) && !toTerritory.getOwner().equals(playerClan)){
-                        sendTitle(player, "§cTerritório Inimigo", "§7" + toTerritory.getDisplayName());
+                    else if (!fromTerritory.getOwner().equals(playerClan) && !toTerritory.getOwner().equals(playerClan)) {
+                        sendTitle(player, plugin.getMessage("enemy_territory_title"), "§7" + toTerritory.getDisplayName());
                     }
                     //From own to own
-                    else if (fromTerritory.getOwner().equals(playerClan) && toTerritory.getOwner().equals(playerClan)){
-                        sendTitle(player, "§aTerritório Aliado", "§7" + toTerritory.getDisplayName());
+                    else if (fromTerritory.getOwner().equals(playerClan) && toTerritory.getOwner().equals(playerClan)) {
+                        sendTitle(player, plugin.getMessage("ally_territory_title"), "§7" + toTerritory.getDisplayName());
                     }
                 }
             }
@@ -61,26 +63,26 @@ public class TerritoryListener implements Listener {
         // Player moved FROM a territory TO the wilderness
         else if (fromTerritory != null && toTerritory == null) {
             //From own territory to wilderness
-            if(fromTerritory.getOwner() != null){
+            if (fromTerritory.getOwner() != null) {
                 if (fromTerritory.getOwner().equals(playerClan)) {
-                    sendTitle(player, "§7Terras Selvagens", "§7Você deixou seu território");
+                    sendTitle(player, plugin.getMessage("wildlands_title"), plugin.getMessage("left_own_territory"));
                 }
                 //From enemy territory to wilderness
                 else {
-                    sendTitle(player, "§7Terras Selvagens", "§7Você deixou um território inimigo");
+                    sendTitle(player, plugin.getMessage("wildlands_title"), plugin.getMessage("left_enemy_territory"));
                 }
             }
         }
         // Player moved FROM the wilderness TO a territory
         else if (fromTerritory == null && toTerritory != null) {
-            if(toTerritory.getOwner() != null){
+            if (toTerritory.getOwner() != null) {
                 //To own territory
                 if (toTerritory.getOwner().equals(playerClan)) {
-                    sendTitle(player, "§aTerritório Aliado", "§7" + toTerritory.getDisplayName());
+                    sendTitle(player, plugin.getMessage("ally_territory_title"), "§7" + toTerritory.getDisplayName());
                 }
                 //To enemy territory
                 else {
-                    sendTitle(player, "§cTerritório Inimigo", "§7" + toTerritory.getDisplayName());
+                    sendTitle(player, plugin.getMessage("enemy_territory_title"), "§7" + toTerritory.getDisplayName());
                 }
             }
         }
