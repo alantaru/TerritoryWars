@@ -7,9 +7,9 @@ import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.plugin.Plugin;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -17,6 +17,9 @@ import java.util.Objects;
 import java.util.logging.Level;
 
 import org.bukkit.ChatColor;
+import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
+import com.sk89q.worldguard.protection.flags.Flags;
+import com.sk89q.worldguard.protection.flags.StateFlag;
 
 public class TerritoryWars extends JavaPlugin {
     private static TerritoryWars instance;
@@ -33,6 +36,7 @@ public class TerritoryWars extends JavaPlugin {
     private SimpleClans clans;
     private Economy economy;
     private FileConfiguration messagesConfig;
+    private WorldGuardPlugin worldGuard;
 
     @Override
     public void onEnable() {
@@ -40,6 +44,13 @@ public class TerritoryWars extends JavaPlugin {
         try {
             // Save default config
             saveDefaultConfig();
+
+            // Setup WorldGuard
+            if (!setupWorldGuard()) {
+                getLogger().severe(getMessage("worldguard_not_found"));
+                Bukkit.getPluginManager().disablePlugin(this);
+                return;
+            }
 
             // Load messages config
             loadMessagesConfig();
@@ -207,10 +218,6 @@ public class TerritoryWars extends JavaPlugin {
         return getConfig().getDouble("economy.territory-cost", 5000.0);
     }
 
-    public double getTaxRate() {
-        return getConfig().getDouble("economy.tribute.per-territory", 2000.0);
-    }
-
     public int getTaxInterval() {
         return getConfig().getInt("economy.tribute.interval", 1440);
     }
@@ -253,6 +260,10 @@ public class TerritoryWars extends JavaPlugin {
         return tributeManager;
     }
 
+    public WorldGuardPlugin getWorldGuard() {
+        return worldGuard;
+    }
+
     public DynmapManager getDynmapManager() {
         return dynmapManager;
     }
@@ -266,8 +277,7 @@ public class TerritoryWars extends JavaPlugin {
         messagesConfig = YamlConfiguration.loadConfiguration(messagesFile);
 
         // Load default messages from the resource
-        try {
-            InputStream defConfigStream = getResource("messages.yml");
+        try (InputStream defConfigStream = getResource("messages.yml")) {
             if (defConfigStream != null) {
                 YamlConfiguration defConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(defConfigStream, StandardCharsets.UTF_8));
                 messagesConfig.setDefaults(defConfig);
@@ -280,5 +290,17 @@ public class TerritoryWars extends JavaPlugin {
     public String getMessage(String key) {
         return ChatColor.translateAlternateColorCodes('&',
             Objects.requireNonNull(messagesConfig.getString(key, "&cMissing message key: " + key)));
+    }
+
+    private boolean setupWorldGuard() {
+        Plugin plugin = getServer().getPluginManager().getPlugin("WorldGuard");
+        if (plugin instanceof WorldGuardPlugin) {
+            worldGuard = (WorldGuardPlugin) plugin;
+            getLogger().info("WorldGuard found and enabled.");
+        } else {
+            getLogger().severe("WorldGuard not found!");
+            return false;
+        }
+        return true;
     }
 }

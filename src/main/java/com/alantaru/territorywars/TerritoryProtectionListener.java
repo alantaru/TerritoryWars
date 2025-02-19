@@ -1,7 +1,15 @@
 package com.alantaru.territorywars;
 
+import com.sk89q.worldguard.WorldGuard;
+import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
+import com.sk89q.worldguard.protection.ApplicableRegionSet;
+import com.sk89q.worldguard.protection.flags.Flags;
+import com.sk89q.worldguard.protection.regions.ProtectedRegion;
+import com.sk89q.worldguard.protection.regions.RegionContainer;
+import com.sk89q.worldguard.protection.regions.RegionQuery;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import net.sacredlabyrinth.phaed.simpleclans.Clan;
-import org.bukkit.Material;
+import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -13,6 +21,7 @@ import org.bukkit.event.block.*;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.hanging.HangingBreakByEntityEvent;
 import org.bukkit.event.player.*;
+
 import java.util.List;
 
 public class TerritoryProtectionListener implements Listener {
@@ -40,7 +49,7 @@ public class TerritoryProtectionListener implements Listener {
         }
 
         // Check player permission
-        if (!hasPermission(event.getPlayer(), territory)) {
+        if (!canBuild(event.getPlayer(), event.getBlock().getLocation(), territory)) {
             event.setCancelled(true);
             event.getPlayer().sendMessage(plugin.getMessage("cannot_build_in_territory"));
         }
@@ -57,7 +66,7 @@ public class TerritoryProtectionListener implements Listener {
             return;
         }
 
-        if (!hasPermission(event.getPlayer(), territory)) {
+        if (!canBreak(event.getPlayer(), event.getBlock().getLocation(), territory)) {
             event.setCancelled(true);
             event.getPlayer().sendMessage(plugin.getMessage("cannot_break_blocks_in_territory"));
         }
@@ -67,7 +76,7 @@ public class TerritoryProtectionListener implements Listener {
     public void onBlockBurn(BlockBurnEvent event) {
         if (event.isCancelled()) return;
         Territory territory = territoryManager.getTerritoryAt(event.getBlock().getLocation());
-        if (territory != null) {
+        if (territory != null && !canBuild(null, event.getBlock().getLocation(), territory)) {
             event.setCancelled(true);
         }
     }
@@ -76,7 +85,7 @@ public class TerritoryProtectionListener implements Listener {
     public void onBlockIgnite(BlockIgniteEvent event) {
         if (event.isCancelled()) return;
         Territory territory = territoryManager.getTerritoryAt(event.getBlock().getLocation());
-        if (territory != null) {
+        if (territory != null && !canBuild(null, event.getBlock().getLocation(), territory)) {
             event.setCancelled(true);
         }
     }
@@ -84,17 +93,19 @@ public class TerritoryProtectionListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onEntityExplode(EntityExplodeEvent event) {
         if (event.isCancelled()) return;
-        event.blockList().removeIf(block -> 
-            territoryManager.getTerritoryAt(block.getLocation()) != null
-        );
+        event.blockList().removeIf(block -> {
+            Territory territory = territoryManager.getTerritoryAt(block.getLocation());
+            return territory != null && !canBuild(null, block.getLocation(), territory);
+        });
     }
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onBlockExplode(BlockExplodeEvent event) {
         if (event.isCancelled()) return;
-        event.blockList().removeIf(block -> 
-            territoryManager.getTerritoryAt(block.getLocation()) != null
-        );
+        event.blockList().removeIf(block -> {
+            Territory territory = territoryManager.getTerritoryAt(block.getLocation());
+             return territory != null && !canBuild(null, block.getLocation(), territory);
+        });
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -135,7 +146,7 @@ public class TerritoryProtectionListener implements Listener {
         Territory territory = territoryManager.getTerritoryAt(event.getBlock().getLocation());
         if (territory == null) return;
 
-        if (!hasPermission(event.getPlayer(), territory)) {
+        if (!canUseBuckets(event.getPlayer(), event.getBlock().getLocation(), territory)) {
             event.setCancelled(true);
             event.getPlayer().sendMessage(plugin.getMessage("cannot_use_buckets_in_territory"));
         }
@@ -147,7 +158,7 @@ public class TerritoryProtectionListener implements Listener {
         Territory territory = territoryManager.getTerritoryAt(event.getBlock().getLocation());
         if (territory == null) return;
 
-        if (!hasPermission(event.getPlayer(), territory)) {
+        if (!canUseBuckets(event.getPlayer(), event.getBlock().getLocation(), territory)) {
             event.setCancelled(true);
             event.getPlayer().sendMessage(plugin.getMessage("cannot_use_buckets_in_territory"));
         }
@@ -161,7 +172,7 @@ public class TerritoryProtectionListener implements Listener {
 
         if (event.getRemover() instanceof Player) {
             Player player = (Player) event.getRemover();
-            if (!hasPermission(player, territory)) {
+            if (!canBuild(player, event.getEntity().getLocation(), territory)) {
                 event.setCancelled(true);
                 player.sendMessage(plugin.getMessage("cannot_break_decorations_in_territory"));
             }
@@ -186,15 +197,57 @@ public class TerritoryProtectionListener implements Listener {
             }
         }
 
-        if (damager != null && !hasPermission(damager, territory)) {
+        if (damager != null && !canAttack(damager, event.getEntity().getLocation(), territory)) {
             event.setCancelled(true);
             damager.sendMessage(plugin.getMessage("cannot_cause_damage_in_territory"));
         }
     }
 
-    private boolean hasPermission(Player player, Territory territory) {
-        Clan playerClan = plugin.getClans().getClanManager()
-            .getClanByPlayerUniqueId(player.getUniqueId());
-        return playerClan != null && playerClan.equals(territory.getOwner());
+    private boolean canBuild(Player player, Location location, Territory territory) {
+        RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
+        RegionQuery query = container.createQuery();
+        ApplicableRegionSet set = query.getApplicableRegions(BukkitAdapter.adapt(location));
+        if (player == null) {
+            return set.testState(null, Flags.BUILD);
+        }
+        Clan playerClan = plugin.getClans().getClanManager().getClanByPlayerUniqueId(player.getUniqueId());
+        Clan territoryOwner = territory.getOwner();
+        return playerClan != null && playerClan.equals(territoryOwner) && set.testState(plugin.getWorldGuard().wrapPlayer(player), Flags.BUILD);
+    }
+
+    private boolean canBreak(Player player, Location location, Territory territory) {
+        RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
+        RegionQuery query = container.createQuery();
+        ApplicableRegionSet set = query.getApplicableRegions(BukkitAdapter.adapt(location));
+        if (player == null) {
+            return set.testState(null, Flags.BLOCK_BREAK);
+        }
+        Clan playerClan = plugin.getClans().getClanManager().getClanByPlayerUniqueId(player.getUniqueId());
+        Clan territoryOwner = territory.getOwner();
+        return playerClan != null && playerClan.equals(territoryOwner) && set.testState(plugin.getWorldGuard().wrapPlayer(player), Flags.BLOCK_BREAK);
+    }
+
+    private boolean canUseBuckets(Player player, Location location, Territory territory) {
+        RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
+        RegionQuery query = container.createQuery();
+        ApplicableRegionSet set = query.getApplicableRegions(BukkitAdapter.adapt(location));
+        if (player == null) {
+            return set.testState(null, Flags.USE);
+        }
+        Clan playerClan = plugin.getClans().getClanManager().getClanByPlayerUniqueId(player.getUniqueId());
+        Clan territoryOwner = territory.getOwner();
+        return playerClan != null && playerClan.equals(territoryOwner) && set.testState(plugin.getWorldGuard().wrapPlayer(player), Flags.USE);
+    }
+
+    private boolean canAttack(Player player, Location location, Territory territory) {
+        RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
+        RegionQuery query = container.createQuery();
+        ApplicableRegionSet set = query.getApplicableRegions(BukkitAdapter.adapt(location));
+        if (player == null) {
+            return set.testState(null, Flags.PVP);
+        }
+        Clan playerClan = plugin.getClans().getClanManager().getClanByPlayerUniqueId(player.getUniqueId());
+        Clan territoryOwner = territory.getOwner();
+        return playerClan != null && playerClan.equals(territoryOwner) && set.testState(plugin.getWorldGuard().wrapPlayer(player), Flags.PVP);
     }
 }
