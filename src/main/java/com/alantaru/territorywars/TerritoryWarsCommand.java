@@ -86,28 +86,23 @@ public class TerritoryWarsCommand implements CommandExecutor, TabCompleter {
                 return true;
             }
 
-            String territoryName = args[1];
-            String description = args[2];
-
-            for (int i = 3; i < args.length; i++) {
-                description += " " + args[i];
+            try {
+                Territory territory = territoryManager.createTerritory(player, player.getLocation(), territoryName);
+                if (territory != null) {
+                    sender.sendMessage(plugin.getMessage("territory_created")
+                        .replace("{territoryName}", territoryName)
+                        .replace("{clanName}", clanName));
+                } else {
+                    sender.sendMessage(plugin.getMessage("territory_creation_failed"));
+                }
+            } catch (IllegalArgumentException e) {
+                sender.sendMessage(plugin.getMessage("territory_creation_failed"));
             }
 
-            Territory territory = territoryManager.getTerritoryByName(territoryName);
-            if (territory == null) {
-                sender.sendMessage(plugin.getMessage("territory_not_found"));
-                return true;
-            }
-
-            territory.setDescription(description);
-            territoryManager.save();
-            sender.sendMessage(plugin.getMessage("setdescription_success")
-                    .replace("{territoryName}", territoryName)
-                    .replace("{description}", description));
             return true;
         }
 
-        if (args[0].equalsIgnoreCase("info")) {
+        if (args[0].equalsIgnoreCase("delete")) {
             if (!(sender instanceof Player)) {
                 sender.sendMessage(plugin.getMessage("command_only_by_player"));
                 return true;
@@ -177,13 +172,13 @@ public class TerritoryWarsCommand implements CommandExecutor, TabCompleter {
             String clanName = args[1];
             String territoryName = args[2];
 
-            // Placeholder for clan existence check
+            // Check if the provided clan name exists
+            if (plugin.getClans().getClanManager().getClan(clanName) == null) {
+                sender.sendMessage(plugin.getMessage("clan_not_found"));
+                return true;
+            }
 
             try {
-                if (!(sender instanceof Player)) {
-                    sender.sendMessage(plugin.getMessage("command_only_by_player"));
-                    return true;
-                }
                 Player playerSender = (Player) sender;
                 Territory territory = territoryManager.createTerritory(playerSender, player.getLocation(), territoryName);
                 if (territory != null) {
@@ -274,18 +269,27 @@ public class TerritoryWarsCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage("§cYou are not inside the territory.");
                 return true;
             }
+            
+            if (!player.hasPermission("territorywars.capture")) {
+                sender.sendMessage(plugin.getMessage("no_permission_capture"));
+                return true;
+            }
+            
+            if (!player.hasPermission("territorywars.capture")) {
+                sender.sendMessage(plugin.getMessage("no_permission_capture"));
+                return true;
+            }
 
             // Placeholder for clan check
 
             // Placeholder for capture process
 
-            sender.sendMessage("§aYou have captured territory: " + territoryName);
-
-            return true;
+            sender.sendMessage(plugin.getMessage("territory_captured")
+                    .replace("{territoryName}", territoryName));
         }
 
         return false;
-    }
+ }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {

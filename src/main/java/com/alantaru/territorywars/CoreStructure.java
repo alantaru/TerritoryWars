@@ -14,9 +14,19 @@ public class CoreStructure {
 
     public CoreStructure(TerritoryWars plugin) {
         this.plugin = plugin;
-        this.material = Material.valueOf(
-            plugin.getConfig().getString("core.structure.material", "OBSIDIAN")
-        );
+        try {
+            this.material = Material.valueOf(
+                plugin.getConfig().getString("core.structure.material", "OBSIDIAN")
+            );
+        } catch (IllegalArgumentException e) {
+            plugin.getLogger().severe("Invalid core material specified in config.yml: " +
+                plugin.getConfig().getString("core.structure.material"));
+            plugin.getLogger().severe("Disabling plugin due to configuration error.");
+            Bukkit.getPluginManager().disablePlugin(plugin);
+            // Set a default material to avoid further errors
+            this.material = Material.OBSIDIAN; 
+            return;
+        }
         this.size = plugin.getConfig().getInt("core.structure.size", 2);
     }
 

@@ -63,19 +63,23 @@ public class TributeManager implements Listener {
             if (player == null) continue;
 
             Economy economy = plugin.getEconomy();
-            if (!economy.has(player, tributePerMember)) {
-                allPaid = false;
-                sendWarning(player, territory, tributePerMember);
-                continue;
-            }
+            try {
+                if (!economy.has(player, tributePerMember)) {
+                    allPaid = false;
+                    sendWarning(player, territory, tributePerMember);
+                    continue;
+                }
 
-            economy.withdrawPlayer(player, tributePerMember);
-            player.sendMessage(String.format(
-                "§aTributo de §f%.2f §apago para o território em X:%d Z:%d",
-                tributePerMember,
+                economy.withdrawPlayer(player, tributePerMember);
+                player.sendMessage(String.format(
+                    "§aTributo de §f%.2f §apago para o território em X:%d Z:%d",
+                    tributePerMember,
                 territory.getGridX() * 3 * 16,
                 territory.getGridZ() * 3 * 16
             ));
+            } catch(Exception e){
+                plugin.getLogger().severe("Error collecting tribute from player " + player.getName() + ": " + e.getMessage());
+            }
         }
 
         if (allPaid) {

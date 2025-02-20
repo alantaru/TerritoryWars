@@ -100,6 +100,7 @@ public class TerritoryManager {
 
         if (plugin.getConfig().getBoolean("dynmap.enabled", true)) {
             plugin.updateDynmapTerritory(territory);
+            plugin.getDynmapManager().updateAllClanTerritories();
         }
 
         return territory;
@@ -142,6 +143,7 @@ public class TerritoryManager {
 
         if (plugin.getConfig().getBoolean("dynmap.enabled", true)) {
             plugin.removeDynmapTerritory(territory);
+            plugin.getDynmapManager().updateAllClanTerritories();
         }
 
         saveTerritories();
@@ -304,8 +306,9 @@ public class TerritoryManager {
             Location coreLoc = context.deserialize(json.get("coreLocation"), Location.class);
             double creationCost = json.get("creationCost").getAsDouble();
             double resistanceMultiplier = json.get("resistanceMultiplier").getAsDouble();
+            String name = obj.get("name").getAsString();
 
-            Territory territory = new Territory(gridX, gridZ, clan, coreLoc, creationCost, resistanceMultiplier, "dummy");
+            Territory territory = new Territory(gridX, gridZ, clan, coreLoc, creationCost, resistanceMultiplier, name);
             territory.setProtectionMode(ProtectionMode.valueOf(json.get("protectionMode").getAsString()));
             territory.setCoreHealth(json.get("coreHealth").getAsInt());
             territory.setLastDamageTime(json.get("lastDamageTime").getAsLong());

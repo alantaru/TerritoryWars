@@ -38,7 +38,7 @@ public class TerritoryWars extends JavaPlugin {
     private FileConfiguration messagesConfig;
     private WorldGuardPlugin worldGuard;
 
-    @Override
+   @Override
     public void onEnable() {
         instance = this;
         try {
@@ -80,11 +80,11 @@ public class TerritoryWars extends JavaPlugin {
             registerCommand();
 
             // Register event listeners
-            getServer().getPluginManager().registerEvents(
-                    new CoreBreakListener(territoryManager, clans, this), this);
-            getServer().getPluginManager().registerEvents(
-                    new TerritoryProtectionListener(this, territoryManager), this);
+            getServer().getPluginManager().registerEvents(new CoreBreakListener(territoryManager, clans, this), this);
+            getServer().getPluginManager().registerEvents(new TerritoryListener(this, territoryManager, clans), this);
+            getServer().getPluginManager().registerEvents(new TerritoryProtectionListener(this, territoryManager), this);
             getServer().getPluginManager().registerEvents(tributeManager, this);
+
 
             // Setup Dynmap if enabled
             if (getConfig().getBoolean("dynmap.enabled", true)) {

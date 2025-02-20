@@ -22,14 +22,12 @@ public class DynmapManager {
     private DynmapAPI dynmap;
     private MarkerSet markerSet;
     private final Map<UUID, AreaMarker> territoryMarkers;
-    private final Map<UUID, PolyLineMarker> adjacencyLines;
     private boolean enabled;
 
     public DynmapManager(TerritoryWars plugin, TerritoryManager territoryManager) {
         this.plugin = plugin;
         this.territoryManager = territoryManager;
         this.territoryMarkers = new HashMap<>();
-        this.adjacencyLines = new HashMap<>();
         this.enabled = setupDynmap();
     }
 
@@ -104,16 +102,17 @@ public class DynmapManager {
         String strokeColor = plugin.getConfig().getString("dynmap.marker-style.stroke-color", "#000000");
         int strokeWeight = plugin.getConfig().getInt("dynmap.marker-style.stroke-weight", 3);
 
-        marker.setFillStyle(fillOpacity, Integer.parseInt(fillColor.substring(1), 16));
-        marker.setLineStyle(strokeWeight, 1.0, Integer.parseInt(strokeColor.substring(1), 16));
+        try {
+            marker.setFillStyle(fillOpacity, Integer.decode(fillColor));
+            marker.setLineStyle(strokeWeight, 1.0, Integer.decode(strokeColor));
+        } catch (NumberFormatException e) {
+            plugin.getLogger().warning("Invalid color format in dynmap configuration: " + e.getMessage());
+        }
+
         marker.setDescription(description);
 
         territoryMarkers.put(territory.getId(), marker);
-    }
-
-    public void updateAdjacencyLines(Territory territory) {
-        // Implementação removida pois não será usada
-    }
+    }   
 
     public void removeTerritory(Territory territory) {
         if (!enabled) return;
@@ -146,6 +145,7 @@ public class DynmapManager {
         }
         this.enabled = setupDynmap();
         updateAllTerritories();
+        updateAllClanTerritories();
     }
 
     public void updateAllClanTerritories() {
@@ -194,8 +194,14 @@ public class DynmapManager {
             String strokeColor = plugin.getConfig().getString("dynmap.marker-style.stroke-color", "#000000");
             int strokeWeight = plugin.getConfig().getInt("dynmap.marker-style.stroke-weight", 3);
 
-            marker.setFillStyle(fillOpacity, Integer.parseInt(fillColor.replace("#", ""), 16));
-            marker.setLineStyle(strokeWeight, 1.0, Integer.parseInt(strokeColor.replace("#", ""), 16));
+            try {
+                marker.setFillStyle(fillOpacity, Integer.decode(fillColor));
+                marker.setLineStyle(strokeWeight, 1.0, Integer.decode(strokeColor));
+            }
+            catch (NumberFormatException e) {
+                plugin.getLogger().warning("Invalid color format in dynmap configuration: " + e.getMessage());
+            }
+            
             marker.setDescription(description);
 
             territoryMarkers.put(UUID.nameUUIDFromBytes(clan.getTag().getBytes()), marker);
