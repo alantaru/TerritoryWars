@@ -21,11 +21,10 @@ public class Territory {
     private String displayName;
     private String description;
     private String banner;
-    private String name;
     private final Set<UUID> adjacentTerritories;
     private final List<Location> coreBlocks;
 
-    public Territory(int gridX, int gridZ, Clan owner, Location coreLocation, double creationCost, double resistanceMultiplier, String name) {
+    public Territory(int gridX, int gridZ, Clan owner, Location coreLocation, double creationCost, double resistanceMultiplier, String displayName) {
         this.id = UUID.randomUUID();
         this.gridX = gridX;
         this.gridZ = gridZ;
@@ -37,10 +36,9 @@ public class Territory {
         this.coreHealth = 50; // Default value, can be overridden by config
         this.lastDamageTime = 0;
         this.lastTributePaid = System.currentTimeMillis();
-        this.displayName = "Território " + gridX + "," + gridZ;
+        this.displayName = displayName;
         this.description = "Território pertencente a " + owner.getName();
         this.banner = "";
-        this.name = name;
         this.adjacentTerritories = new HashSet<>();
         this.coreBlocks = new ArrayList<>();
     }
@@ -142,22 +140,23 @@ public class Territory {
     public void broadcastAttackAlert(TerritoryWars plugin) {
         int blockX = gridX * 3 * 16;
         int blockZ = gridZ * 3 * 16;
-        
+
         String message = String.format(
-            "§c⚠ ALERTA: O território em X:%d Z:%d está sendo atacado!",
-            blockX, blockZ
+                "§c⚠ ALERTA: O território em X:%d Z:%d está sendo atacado!",
+                blockX, blockZ
         );
 
         owner.getMembers().stream()
-            .map(member -> plugin.getServer().getPlayer(member.getUniqueId()))
-            .filter(player -> player != null && player.isOnline())
-            .forEach(player -> {
-                player.sendMessage(message);
-                player.playSound(player.getLocation(), Sound.ENTITY_BLAZE_HURT, 1.0f, 1.0f);
-            });
+                .map(member -> plugin.getServer().getPlayer(member.getUniqueId()))
+                .filter(player -> player != null && player.isOnline())
+                .forEach(player -> {
+                    player.sendMessage(message);
+                    player.playSound(player.getLocation(), Sound.ENTITY_BLAZE_HURT, 1.0f, 1.0f);
+                });
 
         plugin.debug(String.format("Territory at grid %d,%d under attack", gridX, gridZ));
     }
+
 
     public double calculateTribute(TerritoryWars plugin) {
         return creationCost * plugin.getConfig().getDouble("economy.tribute.per-territory", 0.1);
@@ -172,7 +171,7 @@ public class Territory {
         return id;
     }
 
-    public void setId(UUID id) {
+     public void setId(UUID id) {
         // This method is intentionally left blank as the ID should not be changed after creation.
         // If you need to change the ID, consider creating a new Territory object instead.
     }
@@ -236,7 +235,7 @@ public class Territory {
         this.lastDamageTime = lastDamageTime;
     }
 
-    public long getLastTributePaid() {
+   public long getLastTributePaid() {
         return lastTributePaid;
     }
 
@@ -248,8 +247,12 @@ public class Territory {
         return displayName;
     }
 
-    public void setDisplayName(String displayName) {
+   public void setDisplayName(String displayName) {
         this.displayName = displayName;
+    }
+
+    public String getName() {
+        return this.displayName;
     }
 
     public String getDescription() {
@@ -297,13 +300,5 @@ public class Territory {
         coreBlocks.removeIf(loc -> loc.getBlockX() == location.getBlockX() &&
                                   loc.getBlockY() == location.getBlockY() &&
                                   loc.getBlockZ() == location.getBlockZ());
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 }

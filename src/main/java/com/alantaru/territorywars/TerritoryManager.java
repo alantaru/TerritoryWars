@@ -6,7 +6,6 @@ import net.sacredlabyrinth.phaed.simpleclans.Clan;
 import net.sacredlabyrinth.phaed.simpleclans.managers.ClanManager;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.Bukkit;
 
@@ -27,26 +26,24 @@ public class TerritoryManager {
         this.plugin = plugin;
         this.territories = new HashMap<>();
         this.territoriesFile = new File(plugin.getDataFolder(), "territories.json");
-        
+
         GsonBuilder builder = new GsonBuilder()
-            .setPrettyPrinting()
-            .registerTypeAdapter(Location.class, new LocationAdapter())
-            .registerTypeAdapter(Territory.class, new TerritoryAdapter());
-        
+                .setPrettyPrinting()
+                .registerTypeAdapter(Location.class, new LocationAdapter())
+                .registerTypeAdapter(Territory.class, new TerritoryAdapter());
+
         this.gson = builder.create();
         loadTerritories();
     }
 
     public Territory createTerritory(Player player, Location location, String territoryName) {
         Clan clan = plugin.getClans().getClanManager().getClanByPlayerUniqueId(player.getUniqueId());
-        
         if (clan == null) {
             player.sendMessage("§cVocê precisa fazer parte de um clã para criar territórios!");
             return null;
         }
 
-        if (!clan.isLeader(player.getUniqueId()) && 
-            !plugin.getClans().getPermissionsManager().has(player, "simpleclans.leader.can-create")) {
+        if (!plugin.getClans().getPermissionsManager().has(player, "simpleclans.leader.can-create")) {
             player.sendMessage("§cApenas líderes e membros autorizados podem criar territórios!");
             return null;
         }
@@ -66,8 +63,8 @@ public class TerritoryManager {
         Economy economy = plugin.getEconomy();
         if (!economy.has(player, cost)) {
             player.sendMessage(String.format(
-                "§cVocê precisa de §f%.2f §cpara criar um território!",
-                cost
+                    "§cVocê precisa de §f%.2f §cpara criar um território!",
+                    cost
             ));
             return null;
         }
@@ -78,11 +75,9 @@ public class TerritoryManager {
         }
 
         Territory territory = new Territory(gridX, gridZ, clan, location, cost,
-            plugin.getCoreStructure().getResistanceMultiplier(), territoryName);
+                plugin.getCoreStructure().getResistanceMultiplier(), territoryName);
 
-        territory.setName(gridX + "," + gridZ);
-
-        if (!plugin.getCoreStructure().isValidLocation(location, territory)) {
+       if (!plugin.getCoreStructure().isValidLocation(location, territory)) {
             player.sendMessage("§cLocalização inválida para o núcleo!");
             return null;
         }
@@ -100,6 +95,7 @@ public class TerritoryManager {
 
         if (plugin.getConfig().getBoolean("dynmap.enabled", true)) {
             plugin.updateDynmapTerritory(territory);
+            plugin.getDynmapManager().updateAllClanTerritories();
         }
 
         return territory;
@@ -116,22 +112,33 @@ public class TerritoryManager {
             double refundPercentage = plugin.getConfig().getDouble("economy.abandon.refund-percentage", 0.5);
             double refundAmount = territory.getCreationCost() * refundPercentage;
 
-            // Find a leader to give the money to
-            Player leader = Bukkit.getPlayer(clan.getLeaders().get(0).getUniqueId());
-             if (leader != null) {
-                economy.depositPlayer(leader, refundAmount);
-                leader.sendMessage(String.format(
-                    "§aSeu clã abandonou um território e recebeu um reembolso de §f%.2f",
-                    refundAmount
-                ));
+            // Attempt to deposit into the clan's bank account, if possible
+            if (clan.getBalance() >= 0) { // Assuming getBalance() exists and a negative value indicates an error
+                clan.deposit(refundAmount, null); // Assuming deposit() exists and takes a CommandSender (or null)
+                // Broadcast message to online clan members
+                String refundMessage = "§aSeu clã abandonou um território e recebeu um reembolso de §f" + String.format("%.2f", refundAmount);
+                clan.getMembers().forEach(member -> {
+                    Player p = Bukkit.getPlayer(member.getUniqueId());
+                    if (p != null && p.isOnline()){
+                        p.sendMessage(refundMessage);
+                    }
+                });
             } else {
-                 plugin.getLogger().warning("Could not find leader to refund territory abandonment cost to.");
+                // Fallback: Give to online leaders
+                for (net.sacredlabyrinth.phaed.simpleclans.ClanPlayer cp : clan.getLeaders()) {
+                    Player player = Bukkit.getPlayer(cp.getUniqueId());
+                    if (player != null && player.isOnline()) {
+                        economy.depositPlayer(player, refundAmount);
+                        player.sendMessage(String.format(
+                            "§aSeu clã abandonou um território e recebeu um reembolso de §f%.2f",
+                            refundAmount
+                        ));
+                    }
+                }
             }
         }
 
-        territory.getCoreBlocks().forEach(loc ->
-            loc.getBlock().setType(org.bukkit.Material.AIR)
-        );
+        territory.getCoreBlocks().forEach(loc -> loc.getBlock().setType(org.bukkit.Material.AIR));
 
         for (UUID adjacentId : territory.getAdjacentTerritories()) {
             Territory adjacent = territories.get(adjacentId);
@@ -142,6 +149,7 @@ public class TerritoryManager {
 
         if (plugin.getConfig().getBoolean("dynmap.enabled", true)) {
             plugin.removeDynmapTerritory(territory);
+            plugin.getDynmapManager().updateAllClanTerritories();
         }
 
         saveTerritories();
@@ -154,27 +162,27 @@ public class TerritoryManager {
 
     public Territory getTerritoryAtGrid(int gridX, int gridZ) {
         return territories.values().stream()
-            .filter(t -> t.getGridX() == gridX && t.getGridZ() == gridZ)
-            .findFirst()
-            .orElse(null);
+                .filter(t -> t.getGridX() == gridX && t.getGridZ() == gridZ)
+                .findFirst()
+                .orElse(null);
     }
 
     public boolean hasTerritory(Clan clan) {
         return territories.values().stream()
-            .anyMatch(t -> t.getOwner().equals(clan));
+                .anyMatch(t -> t.getOwner().equals(clan));
     }
 
     public boolean hasAdjacentTerritory(Territory territory, Clan clan) {
         return territory.getAdjacentTerritories().stream()
-            .map(territories::get)
-            .filter(Objects::nonNull)
-            .anyMatch(t -> t.getOwner().equals(clan));
+                .map(territories::get)
+                .filter(Objects::nonNull)
+                .anyMatch(t -> t.getOwner().equals(clan));
     }
 
     private boolean hasAdjacentTerritoryAtGrid(Clan clan, int gridX, int gridZ) {
         return territories.values().stream()
-            .filter(t -> t.getOwner().equals(clan))
-            .anyMatch(t -> Math.abs(t.getGridX() - gridX) <= 1 && 
+                .filter(t -> t.getOwner().equals(clan))
+                .anyMatch(t -> Math.abs(t.getGridX() - gridX) <= 1 && 
                           Math.abs(t.getGridZ() - gridZ) <= 1 &&
                           !(t.getGridX() == gridX && t.getGridZ() == gridZ));
     }
@@ -183,11 +191,11 @@ public class TerritoryManager {
         territory.getAdjacentTerritories().clear();
 
         territories.values().stream()
-            .filter(t -> t.isAdjacent(territory))
-            .forEach(t -> {
-                territory.addAdjacentTerritory(t.getId());
-                t.addAdjacentTerritory(territory.getId());
-            });
+                .filter(t -> t.isAdjacent(territory))
+                .forEach(t -> {
+                    territory.addAdjacentTerritory(t.getId());
+                    t.addAdjacentTerritory(territory.getId());
+                });
     }
 
     public void loadTerritories() {
@@ -202,6 +210,7 @@ public class TerritoryManager {
             if (loadedTerritories != null) {
                 for (Territory territory : loadedTerritories) {
                     territories.put(territory.getId(), territory);
+                    updateAdjacencies(territory); // Update adjacencies after loading
                 }
             }
         } catch (IOException e) {
@@ -227,13 +236,13 @@ public class TerritoryManager {
 
     public Territory getTerritoryByName(String name) {
         for (Territory territory : territories.values()) {
-            if (territory.getName().equalsIgnoreCase(name)) {
+            if (territory.getDisplayName().equalsIgnoreCase(name)) {
                 return territory;
             }
         }
         return null;
     }
-
+    
     public void save() {
         saveTerritories();
     }
@@ -267,7 +276,7 @@ public class TerritoryManager {
         }
     }
 
-    private class TerritoryAdapter implements JsonSerializer<Territory>, JsonDeserializer<Territory> {
+    private static class TerritoryAdapter implements JsonSerializer<Territory>, JsonDeserializer<Territory> {
         @Override
         public JsonElement serialize(Territory territory, Type type, JsonSerializationContext context) {
             JsonObject json = new JsonObject();
@@ -293,9 +302,9 @@ public class TerritoryManager {
             JsonObject json = element.getAsJsonObject();
             int gridX = json.get("gridX").getAsInt();
             int gridZ = json.get("gridZ").getAsInt();
-            
+
             String clanTag = json.get("clanId").getAsString();
-            ClanManager clanManager = plugin.getClans().getClanManager();
+            ClanManager clanManager = TerritoryWars.getInstance().getClans().getClanManager();
             Clan clan = clanManager.getClan(clanTag);
             if (clan == null) {
                 throw new JsonParseException("Clan not found: " + clanTag);
@@ -304,17 +313,18 @@ public class TerritoryManager {
             Location coreLoc = context.deserialize(json.get("coreLocation"), Location.class);
             double creationCost = json.get("creationCost").getAsDouble();
             double resistanceMultiplier = json.get("resistanceMultiplier").getAsDouble();
+            String displayName = json.get("displayName").getAsString();
 
-            Territory territory = new Territory(gridX, gridZ, clan, coreLoc, creationCost, resistanceMultiplier, "dummy");
+            Territory territory = new Territory(gridX, gridZ, clan, coreLoc, creationCost, resistanceMultiplier, displayName);
             territory.setProtectionMode(ProtectionMode.valueOf(json.get("protectionMode").getAsString()));
             territory.setCoreHealth(json.get("coreHealth").getAsInt());
             territory.setLastDamageTime(json.get("lastDamageTime").getAsLong());
             territory.setLastTributePaid(json.get("lastTributePaid").getAsLong());
-            territory.setDisplayName(json.get("displayName").getAsString());
+            territory.setDisplayName(displayName);
             territory.setDescription(json.get("description").getAsString());
             territory.setBanner(json.get("banner").getAsString());
 
             return territory;
         }
-    }
+    }    
 }

@@ -1,16 +1,12 @@
 /workspaces/TerritoryWars/src/main/java/com/alantaru/territorywars/ProtectionMode.java
-/workspaces/TerritoryWars/src/main/java/com/alantaru/territorywars/exception/TerritoryDataException.java
 /workspaces/TerritoryWars/src/main/java/com/alantaru/territorywars/TerritoryManager.java
 /workspaces/TerritoryWars/src/main/java/com/alantaru/territorywars/TerritoryAdapter.java
 /workspaces/TerritoryWars/src/main/java/com/alantaru/territorywars/CoreStructure.java
 /workspaces/TerritoryWars/src/main/java/com/alantaru/territorywars/DatabaseManager.java
-/workspaces/TerritoryWars/src/main/java/com/alantaru/territorywars/Clan.java
-/workspaces/TerritoryWars/src/main/java/com/alantaru/territorywars/exception/EconomyException.java
 /workspaces/TerritoryWars/src/main/java/com/alantaru/territorywars/LocationAdapter.java
 /workspaces/TerritoryWars/src/main/java/com/alantaru/territorywars/TerritoryWarsCommand.java
 /workspaces/TerritoryWars/src/main/java/com/alantaru/territorywars/DynmapManager.java
 /workspaces/TerritoryWars/src/main/java/com/alantaru/territorywars/TerritoryWars.java
-/workspaces/TerritoryWars/src/main/java/com/alantaru/territorywars/exception/ClanOperationException.java
 /workspaces/TerritoryWars/src/main/java/com/alantaru/territorywars/CoreBreakListener.java
 /workspaces/TerritoryWars/src/main/java/com/alantaru/territorywars/TerritoryListener.java
 /workspaces/TerritoryWars/src/main/java/com/alantaru/territorywars/TerritoryProtectionListener.java

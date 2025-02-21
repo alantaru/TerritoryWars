@@ -22,14 +22,14 @@ public class DynmapManager {
     private DynmapAPI dynmap;
     private MarkerSet markerSet;
     private final Map<UUID, AreaMarker> territoryMarkers;
-    private final Map<UUID, PolyLineMarker> adjacencyLines;
+    private static final int CHUNK_SIZE = 16;
+    private static final int GRID_SIZE = 3;
     private boolean enabled;
 
     public DynmapManager(TerritoryWars plugin, TerritoryManager territoryManager) {
         this.plugin = plugin;
         this.territoryManager = territoryManager;
         this.territoryMarkers = new HashMap<>();
-        this.adjacencyLines = new HashMap<>();
         this.enabled = setupDynmap();
     }
 
@@ -72,13 +72,12 @@ public class DynmapManager {
         // Calculate territory bounds
         int gridX = territory.getGridX();
         int gridZ = territory.getGridZ();
-        int chunkSize = 16;
-        int gridSize = 3;
+
         
-        double x1 = gridX * gridSize * chunkSize;
-        double z1 = gridZ * gridSize * chunkSize;
-        double x2 = x1 + (gridSize * chunkSize);
-        double z2 = z1 + (gridSize * chunkSize);
+        double x1 = gridX * GRID_SIZE * CHUNK_SIZE;
+        double z1 = gridZ * GRID_SIZE * CHUNK_SIZE;
+        double x2 = x1 + (GRID_SIZE * CHUNK_SIZE);
+        double z2 = z1 + (GRID_SIZE * CHUNK_SIZE);
 
         // Create marker
         String markerId = "territory_" + territory.getId().toString();
@@ -104,16 +103,17 @@ public class DynmapManager {
         String strokeColor = plugin.getConfig().getString("dynmap.marker-style.stroke-color", "#000000");
         int strokeWeight = plugin.getConfig().getInt("dynmap.marker-style.stroke-weight", 3);
 
-        marker.setFillStyle(fillOpacity, Integer.parseInt(fillColor.substring(1), 16));
-        marker.setLineStyle(strokeWeight, 1.0, Integer.parseInt(strokeColor.substring(1), 16));
+        try {
+            marker.setFillStyle(fillOpacity, Integer.decode(fillColor));
+            marker.setLineStyle(strokeWeight, 1.0, Integer.decode(strokeColor));
+        } catch (NumberFormatException e) {
+            plugin.getLogger().warning("Invalid color format in dynmap configuration: " + e.getMessage());
+        }
+
         marker.setDescription(description);
 
         territoryMarkers.put(territory.getId(), marker);
-    }
-
-    public void updateAdjacencyLines(Territory territory) {
-        // Implementação removida pois não será usada
-    }
+    }   
 
     public void removeTerritory(Territory territory) {
         if (!enabled) return;
@@ -146,6 +146,7 @@ public class DynmapManager {
         }
         this.enabled = setupDynmap();
         updateAllTerritories();
+        updateAllClanTerritories();
     }
 
     public void updateAllClanTerritories() {
@@ -194,8 +195,14 @@ public class DynmapManager {
             String strokeColor = plugin.getConfig().getString("dynmap.marker-style.stroke-color", "#000000");
             int strokeWeight = plugin.getConfig().getInt("dynmap.marker-style.stroke-weight", 3);
 
-            marker.setFillStyle(fillOpacity, Integer.parseInt(fillColor.replace("#", ""), 16));
-            marker.setLineStyle(strokeWeight, 1.0, Integer.parseInt(strokeColor.replace("#", ""), 16));
+            try {
+                marker.setFillStyle(fillOpacity, Integer.decode(fillColor));
+                marker.setLineStyle(strokeWeight, 1.0, Integer.decode(strokeColor));
+            }
+            catch (NumberFormatException e) {
+                plugin.getLogger().warning("Invalid color format in dynmap configuration: " + e.getMessage());
+            }
+            
             marker.setDescription(description);
 
             territoryMarkers.put(UUID.nameUUIDFromBytes(clan.getTag().getBytes()), marker);
@@ -212,45 +219,45 @@ public class DynmapManager {
             return boundary;
         }
 
-        int chunkSize = 16;
+       int chunkSize = 16;
         int gridSize = 3;
 
         for (Territory territory : clanTerritories) {
             int gridX = territory.getGridX();
             int gridZ = territory.getGridZ();
 
-            double x1 = gridX * gridSize * chunkSize;
-            double z1 = gridZ * gridSize * chunkSize;
-            double x2 = x1 + (gridSize * chunkSize);
-            double z2 = z1 + (gridSize * chunkSize);
+            double x1 = gridX * GRID_SIZE * CHUNK_SIZE;
+            double z1 = gridZ * GRID_SIZE * CHUNK_SIZE;
+            double x2 = x1 + (GRID_SIZE * CHUNK_SIZE);
+            double z2 = z1 + (GRID_SIZE * CHUNK_SIZE);
 
             Location corner1 = new Location(territory.getCoreLocation().getWorld(), x1, territory.getCoreLocation().getY(), z1);
             Location corner2 = new Location(territory.getCoreLocation().getWorld(), x2, territory.getCoreLocation().getY(), z1);
             Location corner3 = new Location(territory.getCoreLocation().getWorld(), x2, territory.getCoreLocation().getY(), z2);
             Location corner4 = new Location(territory.getCoreLocation().getWorld(), x1, territory.getCoreLocation().getY(), z2);
 
-            if (!isAdjacentToClanTerritory(territory, clan, gridX - 1, gridZ)) {
+            if (!hasTerritoryAtGridBelongingToClan(territory, clan, gridX - 1, gridZ)) {
                 boundary.add(corner1);
                 boundary.add(corner4);
             }
-            if (!isAdjacentToClanTerritory(territory, clan, gridX + 1, gridZ)) {
+            if (!hasTerritoryAtGridBelongingToClan(territory, clan, gridX + 1, gridZ)) {
                 boundary.add(corner2);
                 boundary.add(corner3);
             }
-            if (!isAdjacentToClanTerritory(territory, clan, gridX, gridZ - 1)) {
+            if (!hasTerritoryAtGridBelongingToClan(territory, clan, gridX, gridZ - 1)) {
                 boundary.add(corner1);
                 boundary.add(corner2);
             }
-            if (!isAdjacentToClanTerritory(territory, clan, gridX, gridZ + 1)) {
+            if (!hasTerritoryAtGridBelongingToClan(territory, clan, gridX, gridZ + 1)) {
                 boundary.add(corner3);
                 boundary.add(corner4);
             }
         }
 
-        return boundary;
+       return boundary;
     }
 
-    private boolean isAdjacentToClanTerritory(Territory territory, Clan clan, int gridX, int gridZ) {
+   private boolean hasTerritoryAtGridBelongingToClan(Territory territory, Clan clan, int gridX, int gridZ) {
         return territoryManager.getTerritoryAtGrid(gridX, gridZ) != null &&
                territoryManager.getTerritoryAtGrid(gridX, gridZ).getOwner().equals(clan);
     }

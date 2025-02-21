@@ -1,5 +1,6 @@
 package com.alantaru.territorywars;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -12,13 +13,23 @@ public class CoreStructure {
     private final Material material;
     private final int size;
 
-    public CoreStructure(TerritoryWars plugin) {
-        this.plugin = plugin;
-        this.material = Material.valueOf(
-            plugin.getConfig().getString("core.structure.material", "OBSIDIAN")
-        );
-        this.size = plugin.getConfig().getInt("core.structure.size", 2);
-    }
+public CoreStructure(TerritoryWars plugin) {
+     this.plugin = plugin;
+     int size = 2; // Default size
+     Material mat;
+
+     try {
+         mat = Material.valueOf(plugin.getConfig().getString("core.structure.material", "OBSIDIAN"));
+         size = plugin.getConfig().getInt("core.structure.size", 2);
+
+     } catch (IllegalArgumentException e) {
+         plugin.getLogger().severe("Invalid core material specified in config.yml. Using default: OBSIDIAN");
+         mat = Material.OBSIDIAN; // Default material
+
+     }
+     this.material = mat;
+     this.size = size;
+ }
 
     public List<Location> spawn(Location baseLocation) {
         List<Location> coreBlocks = new ArrayList<>();
