@@ -261,4 +261,15 @@ public class DynmapManager {
         return territoryManager.getTerritoryAtGrid(gridX, gridZ) != null &&
                territoryManager.getTerritoryAtGrid(gridX, gridZ).getOwner().equals(clan);
     }
+
+    public void disable() {
+        if (markerSet != null) {
+            markerSet.deleteMarkerSet();
+            markerSet = null;
+        }
+        if (dynmap != null) {
+            dynmap = null;
+        }
+        enabled = false;
+    }
 }

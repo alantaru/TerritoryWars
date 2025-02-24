@@ -84,6 +84,7 @@ public class TerritoryWars extends JavaPlugin {
             getServer().getPluginManager().registerEvents(new TerritoryListener(this, territoryManager, clans), this);
             getServer().getPluginManager().registerEvents(new TerritoryProtectionListener(this, territoryManager), this);
             getServer().getPluginManager().registerEvents(tributeManager, this);
+            getServer().getPluginManager().registerEvents(new TransactionListener(this), this);
 
 
             // Setup Dynmap if enabled
@@ -99,23 +100,23 @@ public class TerritoryWars extends JavaPlugin {
         }
     }
 
-    @Override
+   @Override
     public void onDisable() {
         try {
             if (territoryManager != null) {
                 territoryManager.saveTerritories();
             }
 
-            if (tributeManager != null) {
+   if (tributeManager != null) {
                 tributeManager.disable();
             }
 
-            if (dynmapManager != null) {
-                // Dynmap will handle cleanup of markers when plugin is disabled
-                dynmapManager = null;
+   if (dynmapManager != null) {
+                dynmapManager.disable();
             }
+            dynmapManager = null;
 
-            if (databaseManager != null) {
+   if (databaseManager != null) {
                 databaseManager.closeConnection();
             }
 

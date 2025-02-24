@@ -1,0 +1,16 @@
+economy:
+  first-territory-cost: 15000.0
+  territory-cost: 5000.0
+  tribute:
+    per-territory: 2000.0
+    interval: 1440
+protection:
+  raid-hours:
+    start-time: "18:00"
+    end-time: "23:00"
+  minimum-players:
+    online-percentage: 30.0
+dynmap:
+  enabled: true
+debug:
+  enabled: false

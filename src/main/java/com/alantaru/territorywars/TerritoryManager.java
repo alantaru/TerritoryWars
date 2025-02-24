@@ -242,6 +242,26 @@ public class TerritoryManager {
         }
         return null;
     }
+
+    public Clan getDominantClan() {
+        Clan dominantClan = null;
+        int maxTerritories = 0;
+
+        Map<Clan, Integer> clanTerritoryCounts = new HashMap<>();
+
+        for (Territory territory : territories.values()) {
+            Clan clan = territory.getOwner();
+            if (clan != null) {
+                clanTerritoryCounts.put(clan, clanTerritoryCounts.getOrDefault(clan, 0) + 1);
+                if (clanTerritoryCounts.get(clan) > maxTerritories) {
+                    maxTerritories = clanTerritoryCounts.get(clan);
+                    dominantClan = clan;
+                }
+            }
+        }
+
+        return dominantClan;
+    }
     
     public void save() {
         saveTerritories();

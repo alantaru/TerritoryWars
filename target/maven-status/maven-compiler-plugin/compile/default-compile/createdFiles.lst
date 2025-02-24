@@ -3,7 +3,10 @@ com/alantaru/territorywars/CoreBreakListener.class
 com/alantaru/territorywars/CoreBreakListener$1.class
 com/alantaru/territorywars/TerritoryManager$TerritoryAdapter.class
 com/alantaru/territorywars/DatabaseManager.class
+com/alantaru/territorywars/TransactionListener.class
+com/alantaru/territorywars/TransactionListener$1.class
 com/alantaru/territorywars/TerritoryWarsCommand.class
+com/alantaru/territorywars/TransactionListener$EconomyInvocationHandler.class
 com/alantaru/territorywars/TerritoryWars.class
 com/alantaru/territorywars/ProtectionMode.class
 com/alantaru/territorywars/DynmapManager.class
