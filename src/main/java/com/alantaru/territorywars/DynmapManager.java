@@ -1,20 +1,15 @@
 package com.alantaru.territorywars;
 
 import net.sacredlabyrinth.phaed.simpleclans.Clan;
-import java.util.List;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.ArrayList;
-import java.util.stream.Collectors;
-
 import org.bukkit.Location;
 import org.bukkit.plugin.Plugin;
 import org.dynmap.DynmapAPI;
-import org.dynmap.markers.*;
+import org.dynmap.markers.AreaMarker;
+import org.dynmap.markers.MarkerAPI;
+import org.dynmap.markers.MarkerSet;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class DynmapManager {
     private final TerritoryWars plugin;
@@ -140,34 +135,34 @@ public class DynmapManager {
         return enabled;
     }
 
-    public void reload() {
-        if (markerSet != null) {
-            markerSet.deleteMarkerSet();
-        }
-        this.enabled = setupDynmap();
-        updateAllTerritories();
-        updateAllClanTerritories();
-    }
+	public void reload() {
+		if (markerSet != null) {
+			markerSet.deleteMarkerSet();
+		}
+		this.enabled = setupDynmap();
+		// updateAllTerritories(); // Redundant call, as updateAllClanTerritories handles everything
+		updateAllClanTerritories();
+	}
 
-    public void updateAllClanTerritories() {
-        if (!enabled) return;
+	public void updateAllClanTerritories() {
+		if (!enabled) return;
 
-        // Clear all markers
-        territoryMarkers.values().forEach(marker -> marker.deleteMarker());
-        territoryMarkers.clear();
+		// Clear all markers
+		territoryMarkers.values().forEach(marker -> marker.deleteMarker());
+		territoryMarkers.clear();
 
-        // Get all clans with territories
-        Set<Clan> clansWithTerritories = new HashSet<>();
-        for (Territory territory : territoryManager.getTerritories().values()) {
-            clansWithTerritories.add(territory.getOwner());
-        }
+		// Get all clans with territories
+		Set<Clan> clansWithTerritories = new HashSet<>();
+		for (Territory territory : territoryManager.getTerritories().values()) {
+			clansWithTerritories.add(territory.getOwner());
+		}
 
-        for (Clan clan : clansWithTerritories) {
-            List<Location> boundary = calculateClanTerritoryBoundary(clan);
+		for (Clan clan : clansWithTerritories) {
+			List<Location> boundary = calculateClanTerritoryBoundary(clan);
 
-            if (boundary.isEmpty()) {
-                continue;
-            }
+			if (boundary.isEmpty()) {
+				continue;
+			}
 
             double[] x = new double[boundary.size()];
             double[] z = new double[boundary.size()];
@@ -176,38 +171,39 @@ public class DynmapManager {
                 z[i] = boundary.get(i).getZ();
             }
 
-            // Create marker
-            String markerId = "clan_" + clan.getTag();
-            String label = clan.getName();
-            String description = "Território de " + clan.getName();
+			// Create marker
+			String markerId = "clan_" + clan.getTag();
+			String label = clan.getName();
+			String description = plugin.getMessage("dynmap_clan_territory_description");
+            description = String.format(description, clan.getName());
 
-            AreaMarker marker = markerSet.createAreaMarker(
-                    markerId, label, true,
-                    boundary.get(0).getWorld().getName(),
-                    x,
-                    z,
-                    true
-            );
+			AreaMarker marker = markerSet.createAreaMarker(
+					markerId, label, true,
+					boundary.get(0).getWorld().getName(),
+					x,
+					z,
+					true
+			);
 
-            // Set marker style
-            String fillColor = plugin.getConfig().getString("dynmap.marker-style.fill-color", "#FF0000");
-            double fillOpacity = plugin.getConfig().getDouble("dynmap.marker-style.fill-opacity", 0.3);
-            String strokeColor = plugin.getConfig().getString("dynmap.marker-style.stroke-color", "#000000");
-            int strokeWeight = plugin.getConfig().getInt("dynmap.marker-style.stroke-weight", 3);
+			// Set marker style
+			String fillColor = plugin.getConfig().getString("dynmap.marker-style.fill-color", "#FF0000");
+			double fillOpacity = plugin.getConfig().getDouble("dynmap.marker-style.fill-opacity", 0.3);
+			String strokeColor = plugin.getConfig().getString("dynmap.marker-style.stroke-color", "#000000");
+			int strokeWeight = plugin.getConfig().getInt("dynmap.marker-style.stroke-weight", 3);
 
-            try {
-                marker.setFillStyle(fillOpacity, Integer.decode(fillColor));
-                marker.setLineStyle(strokeWeight, 1.0, Integer.decode(strokeColor));
-            }
-            catch (NumberFormatException e) {
-                plugin.getLogger().warning("Invalid color format in dynmap configuration: " + e.getMessage());
-            }
-            
-            marker.setDescription(description);
+			try {
+				marker.setFillStyle(fillOpacity, Integer.decode(fillColor));
+				marker.setLineStyle(strokeWeight, 1.0, Integer.decode(strokeColor));
+			}
+			catch (NumberFormatException e) {
+				plugin.getLogger().warning("Invalid color format in dynmap configuration: " + e.getMessage());
+			}
 
-            territoryMarkers.put(UUID.nameUUIDFromBytes(clan.getTag().getBytes()), marker);
-        }
-    }
+			marker.setDescription(description);
+
+			territoryMarkers.put(UUID.nameUUIDFromBytes(clan.getTag().getBytes()), marker);
+		}
+	}
 
     private List<Location> calculateClanTerritoryBoundary(Clan clan) {
         List<Location> boundary = new ArrayList<>();

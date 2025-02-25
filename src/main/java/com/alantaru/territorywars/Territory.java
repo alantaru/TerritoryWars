@@ -1,304 +1,327 @@
 package com.alantaru.territorywars;
 
 import net.sacredlabyrinth.phaed.simpleclans.Clan;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.Sound;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
-import java.util.*;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * Represents a territory in the game.
+ */
 public class Territory {
-    private final UUID id;
+    private final String id;
     private final int gridX;
     private final int gridZ;
+    private final String worldName;
     private Clan owner;
-    private Location coreLocation;
-    private final double creationCost;
-    private final double resistanceMultiplier;
-    private ProtectionMode protectionMode;
     private int coreHealth;
+    private Location coreLocation;
+    private List<Location> coreBlocks;
+    private ProtectionMode protectionMode;
     private long lastDamageTime;
-    private long lastTributePaid;
-    private String displayName;
-    private String description;
-    private String banner;
-    private final Set<UUID> adjacentTerritories;
-    private final List<Location> coreBlocks;
+    private long lastTributeTime;
 
-    public Territory(int gridX, int gridZ, Clan owner, Location coreLocation, double creationCost, double resistanceMultiplier, String displayName) {
-        this.id = UUID.randomUUID();
+    /**
+     * Creates a new Territory.
+     * @param id The unique ID of the territory
+     * @param gridX The X coordinate in the grid
+     * @param gridZ The Z coordinate in the grid
+     * @param worldName The name of the world
+     * @param owner The clan that owns the territory
+     */
+    public Territory(String id, int gridX, int gridZ, String worldName, Clan owner) {
+        this.id = id;
         this.gridX = gridX;
         this.gridZ = gridZ;
+        this.worldName = worldName;
         this.owner = owner;
-        this.coreLocation = coreLocation;
-        this.creationCost = creationCost;
-        this.resistanceMultiplier = resistanceMultiplier;
-        this.protectionMode = ProtectionMode.INFINITE_WAR;
-        this.coreHealth = 50; // Default value, can be overridden by config
-        this.lastDamageTime = 0;
-        this.lastTributePaid = System.currentTimeMillis();
-        this.displayName = displayName;
-        this.description = "Território pertencente a " + owner.getName();
-        this.banner = "";
-        this.adjacentTerritories = new HashSet<>();
         this.coreBlocks = new ArrayList<>();
-    }
-
-    public static int[] calculateGridCoordinates(Location location) {
-        // Convert block coordinates to chunk coordinates
-        // Example: Block X=1 -> Chunk X=0 (since 1/16 = 0)
-        int chunkX = location.getBlockX() >> 4; // Divide by 16
-        int chunkZ = location.getBlockZ() >> 4;
+        this.protectionMode = ProtectionMode.RAID_HOURS; // Default protection mode
         
-        // Convert chunk coordinates to grid coordinates (3x3 chunks per grid)
-        // Example: If at block X=1, Z=1 (chunk 0,0), we want grid 0,0
-        // Grid 0,0 contains chunks 0,0 to 2,2
-        // Grid 0,1 contains chunks 0,3 to 2,5
-        int gridX = Math.floorDiv(chunkX, 3);
-        int gridZ = Math.floorDiv(chunkZ, 3);
-        
-        return new int[]{gridX, gridZ};
-    }
-
-    public boolean isInside(Location location) {
-        // Get chunk coordinates
-        int chunkX = location.getBlockX() >> 4;
-        int chunkZ = location.getBlockZ() >> 4;
-        
-        // Calculate grid bounds
-        // Each grid is 3x3 chunks
-        // Grid 0,0 contains chunks 0,0 to 2,2
-        // Grid 0,1 contains chunks 0,3 to 2,5
-        int startChunkX = gridX * 3;
-        int startChunkZ = gridZ * 3;
-        int endChunkX = startChunkX + 2; // +2 because it's 3 chunks wide (0,1,2)
-        int endChunkZ = startChunkZ + 2;
-        
-        // Check if chunk is within grid bounds
-        return chunkX >= startChunkX && chunkX <= endChunkX &&
-               chunkZ >= startChunkZ && chunkZ <= endChunkZ;
-    }
-
-    public boolean isAdjacent(Territory other) {
-        // Check if territories share a border
-        // For example: Grid 0,0 is adjacent to 0,1 but not 0,2
-        return Math.abs(this.gridX - other.gridX) <= 1 && 
-               Math.abs(this.gridZ - other.gridZ) <= 1 &&
-               !(this.gridX == other.gridX && this.gridZ == other.gridZ);
-    }
-
-    public boolean isBlockPartOfCore(Location location) {
-        for (Location loc : coreBlocks) {
-            if (loc.getBlockX() == location.getBlockX() &&
-                loc.getBlockY() == location.getBlockY() &&
-                loc.getBlockZ() == location.getBlockZ()) {
-                return true;
-            }
+        // Get core health from config or use default
+        TerritoryWars plugin = (TerritoryWars) Bukkit.getPluginManager().getPlugin("TerritoryWars");
+        if (plugin != null) {
+            this.coreHealth = plugin.getCoreStructure().getCoreHealth();
+        } else {
+            this.coreHealth = 50; // Default value
         }
-        return false;
     }
 
-    public boolean canMoveCoreToLocation(Location newLocation) {
-        if (!isInside(newLocation)) {
-            return false;
-        }
-
-        for (int x = 0; x < 2; x++) {
-            for (int y = 0; y < 2; y++) {
-                for (int z = 0; z < 2; z++) {
-                    Location checkLoc = newLocation.clone().add(x, y, z);
-                    if (!isInside(checkLoc)) {
-                        return false;
-                    }
-                }
-            }
-        }
-
-        return true;
-    }
-
-    public void spawnCoreStructure(TerritoryWars plugin) {
-        for (Location loc : coreBlocks) {
-            loc.getBlock().setType(org.bukkit.Material.AIR);
-        }
-        coreBlocks.clear();
-
-        List<Location> newBlocks = plugin.getCoreStructure().spawn(coreLocation);
-        coreBlocks.addAll(newBlocks);
-
-        this.coreHealth = plugin.getConfig().getInt("core.required-hits", 50);
-    }
-
-    public void damageCore(int damage) {
-        int reducedDamage = (int) Math.ceil(damage / resistanceMultiplier);
-        coreHealth = Math.max(0, coreHealth - reducedDamage);
-    }
-
-    public boolean isCoreDestroyed() {
-        return coreHealth <= 0;
-    }
-
-    public void broadcastAttackAlert(TerritoryWars plugin) {
-        int blockX = gridX * 3 * 16;
-        int blockZ = gridZ * 3 * 16;
-
-        String message = String.format(
-                "§c⚠ ALERTA: O território em X:%d Z:%d está sendo atacado!",
-                blockX, blockZ
-        );
-
-        owner.getMembers().stream()
-                .map(member -> plugin.getServer().getPlayer(member.getUniqueId()))
-                .filter(player -> player != null && player.isOnline())
-                .forEach(player -> {
-                    player.sendMessage(message);
-                    player.playSound(player.getLocation(), Sound.ENTITY_BLAZE_HURT, 1.0f, 1.0f);
-                });
-
-        plugin.debug(String.format("Territory at grid %d,%d under attack", gridX, gridZ));
-    }
-
-
-    public double calculateTribute(TerritoryWars plugin) {
-        return creationCost * plugin.getConfig().getDouble("economy.tribute.per-territory", 0.1);
-    }
-
-    public void updateTributePayment() {
-        this.lastTributePaid = System.currentTimeMillis();
-    }
-
-    // Getters and Setters
-    public UUID getId() {
+    /**
+     * Gets the unique ID of the territory.
+     * @return The unique ID
+     */
+    public String getId() {
         return id;
     }
 
-     public void setId(UUID id) {
-        // This method is intentionally left blank as the ID should not be changed after creation.
-        // If you need to change the ID, consider creating a new Territory object instead.
-    }
-
+    /**
+     * Gets the X coordinate in the grid.
+     * @return The X coordinate
+     */
     public int getGridX() {
         return gridX;
     }
 
+    /**
+     * Gets the Z coordinate in the grid.
+     * @return The Z coordinate
+     */
     public int getGridZ() {
         return gridZ;
     }
 
+    /**
+     * Gets the name of the world.
+     * @return The world name
+     */
+    public String getWorldName() {
+        return worldName;
+    }
+
+    /**
+     * Gets the clan that owns the territory.
+     * @return The owning clan
+     */
     public Clan getOwner() {
         return owner;
     }
 
+    /**
+     * Sets the clan that owns the territory.
+     * @param owner The new owning clan
+     */
     public void setOwner(Clan owner) {
         this.owner = owner;
     }
 
-    public Location getCoreLocation() {
-        return coreLocation;
-    }
-
-    public void setCoreLocation(Location coreLocation) {
-        if (!canMoveCoreToLocation(coreLocation)) {
-            throw new IllegalArgumentException("Invalid core location! Must be within territory bounds.");
-        }
-        this.coreLocation = coreLocation;
-    }
-
-    public double getCreationCost() {
-        return creationCost;
-    }
-
-    public double getResistanceMultiplier() {
-        return resistanceMultiplier;
-    }
-
-    public ProtectionMode getProtectionMode() {
-        return protectionMode;
-    }
-
-    public void setProtectionMode(ProtectionMode protectionMode) {
-        this.protectionMode = protectionMode;
-    }
-
+    /**
+     * Gets the core health.
+     * @return The core health
+     */
     public int getCoreHealth() {
         return coreHealth;
     }
 
+    /**
+     * Sets the core health.
+     * @param coreHealth The new core health
+     */
     public void setCoreHealth(int coreHealth) {
         this.coreHealth = coreHealth;
     }
 
+    /**
+     * Gets the location of the core.
+     * @return The core location
+     */
+    public Location getCoreLocation() {
+        return coreLocation;
+    }
+
+    /**
+     * Sets the location of the core.
+     * @param coreLocation The new core location
+     */
+    public void setCoreLocation(Location coreLocation) {
+        this.coreLocation = coreLocation;
+    }
+
+    /**
+     * Gets the blocks that make up the core.
+     * @return The core blocks
+     */
+    public List<Location> getCoreBlocks() {
+        return coreBlocks;
+    }
+
+    /**
+     * Sets the blocks that make up the core.
+     * @param coreBlocks The new core blocks
+     */
+    public void setCoreBlocks(List<Location> coreBlocks) {
+        this.coreBlocks = coreBlocks;
+    }
+
+    /**
+     * Gets the protection mode of the territory.
+     * @return The protection mode
+     */
+    public ProtectionMode getProtectionMode() {
+        return protectionMode;
+    }
+
+    /**
+     * Sets the protection mode of the territory.
+     * @param protectionMode The new protection mode
+     */
+    public void setProtectionMode(ProtectionMode protectionMode) {
+        this.protectionMode = protectionMode;
+    }
+
+    /**
+     * Gets the last time the core was damaged.
+     * @return The last damage time
+     */
     public long getLastDamageTime() {
         return lastDamageTime;
     }
 
+    /**
+     * Sets the last time the core was damaged.
+     * @param lastDamageTime The new last damage time
+     */
     public void setLastDamageTime(long lastDamageTime) {
         this.lastDamageTime = lastDamageTime;
     }
 
-   public long getLastTributePaid() {
-        return lastTributePaid;
+    /**
+     * Gets the last time the territory received tribute.
+     * @return The last tribute time
+     */
+    public long getLastTributeTime() {
+        return lastTributeTime;
     }
 
-    public void setLastTributePaid(long lastTributePaid) {
-        this.lastTributePaid = lastTributePaid;
+    /**
+     * Sets the last time the territory received tribute.
+     * @param lastTributeTime The new last tribute time
+     */
+    public void setLastTributeTime(long lastTributeTime) {
+        this.lastTributeTime = lastTributeTime;
     }
 
-    public String getDisplayName() {
-        return displayName;
+    /**
+     * Checks if a location is inside this territory.
+     * @param location The location to check
+     * @return True if the location is inside this territory, false otherwise
+     */
+    public boolean isInside(Location location) {
+        if (!location.getWorld().getName().equals(worldName)) {
+            return false;
+        }
+        
+        // Get territory bounds
+        TerritoryWars plugin = (TerritoryWars) Bukkit.getPluginManager().getPlugin("TerritoryWars");
+        if (plugin == null) {
+            return false;
+        }
+        
+        int gridSize = plugin.getTerritoryManager().getGridSize();
+        int blockSize = plugin.getTerritoryManager().getBlockSize();
+        
+        int minX = gridX * gridSize * blockSize;
+        int minZ = gridZ * gridSize * blockSize;
+        int maxX = minX + (gridSize * blockSize) - 1;
+        int maxZ = minZ + (gridSize * blockSize) - 1;
+        
+        int x = location.getBlockX();
+        int z = location.getBlockZ();
+        
+        return x >= minX && x <= maxX && z >= minZ && z <= maxZ;
     }
 
-   public void setDisplayName(String displayName) {
-        this.displayName = displayName;
+    /**
+     * Places the core at the specified location.
+     * @param location The location to place the core
+     * @param plugin The TerritoryWars plugin
+     * @return True if the core was placed successfully, false otherwise
+     */
+    public boolean placeCore(Location location, TerritoryWars plugin) {
+        // Check if core is already placed
+        if (coreLocation != null) {
+            return false;
+        }
+        
+        // Check if location is valid
+        if (!isInside(location) || !plugin.getCoreStructure().isValidLocation(location, this)) {
+            return false;
+        }
+        
+        // Spawn core structure
+        List<Location> blocks = plugin.getCoreStructure().spawn(location);
+        
+        // Update territory
+        coreLocation = location;
+        coreBlocks = blocks;
+        coreHealth = plugin.getCoreStructure().getCoreHealth();
+        
+        return true;
     }
 
-    public String getName() {
-        return this.displayName;
+    /**
+     * Removes the core.
+     * @param plugin The TerritoryWars plugin
+     */
+    public void removeCore(TerritoryWars plugin) {
+        if (coreLocation != null && !coreBlocks.isEmpty()) {
+            plugin.getCoreStructure().remove(coreBlocks);
+            coreLocation = null;
+            coreBlocks.clear();
+        }
     }
 
-    public String getDescription() {
-        return description;
+    /**
+     * Damages the core.
+     * @param damage The amount of damage to do
+     */
+    public void damageCore(int damage) {
+        coreHealth -= damage;
+        if (coreHealth < 0) {
+            coreHealth = 0;
+        }
     }
 
-    public void setDescription(String description) {
-        this.description = description;
+    /**
+     * Checks if the core is destroyed.
+     * @return True if the core is destroyed, false otherwise
+     */
+    public boolean isCoreDestroyed() {
+        return coreHealth <= 0;
     }
 
-    public String getBanner() {
-        return banner;
+    /**
+     * Checks if a block is part of the core.
+     * @param location The location to check
+     * @return True if the block is part of the core, false otherwise
+     */
+    public boolean isBlockPartOfCore(Location location) {
+        if (coreBlocks == null || coreBlocks.isEmpty()) {
+            return false;
+        }
+        
+        TerritoryWars plugin = (TerritoryWars) Bukkit.getPluginManager().getPlugin("TerritoryWars");
+        if (plugin == null) {
+            return false;
+        }
+        
+        return plugin.getCoreStructure().isPartOfStructure(location, coreBlocks);
     }
 
-    public void setBanner(String banner) {
-        this.banner = banner;
-    }
-
-    public Set<UUID> getAdjacentTerritories() {
-        return new HashSet<>(adjacentTerritories);
-    }
-
-    public void addAdjacentTerritory(UUID territoryId) {
-        adjacentTerritories.add(territoryId);
-    }
-
-    public void removeAdjacentTerritory(UUID territoryId) {
-        adjacentTerritories.remove(territoryId);
-    }
-
-    public void setAdjacentTerritories(Collection<UUID> territoryIds) {
-        adjacentTerritories.clear();
-        adjacentTerritories.addAll(territoryIds);
-    }
-
-    public List<Location> getCoreBlocks() {
-        return Collections.unmodifiableList(coreBlocks);
-    }
-
-    public void addCoreBlock(Location location) {
-        coreBlocks.add(location);
-    }
-
-    public void removeCoreBlock(Location location) {
-        coreBlocks.removeIf(loc -> loc.getBlockX() == location.getBlockX() &&
-                                  loc.getBlockY() == location.getBlockY() &&
-                                  loc.getBlockZ() == location.getBlockZ());
+    /**
+     * Broadcasts an attack alert to all online members of the owning clan.
+     * @param plugin The TerritoryWars plugin
+     */
+    public void broadcastAttackAlert(TerritoryWars plugin) {
+        if (owner == null) {
+            return;
+        }
+        
+        String message = plugin.getMessage("territory_under_attack")
+                .replace("%d", String.valueOf(gridX * plugin.getTerritoryManager().getGridSize() * plugin.getTerritoryManager().getBlockSize()))
+                .replace("%d", String.valueOf(gridZ * plugin.getTerritoryManager().getGridSize() * plugin.getTerritoryManager().getBlockSize()));
+        
+        // Send message to all online clan members
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            UUID playerId = player.getUniqueId();
+            if (owner.isMember(playerId)) {
+                player.sendMessage(message);
+            }
+        }
     }
 }

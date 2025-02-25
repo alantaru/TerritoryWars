@@ -15,19 +15,54 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ *  Listens for block break events to handle core breaking logic.
+ */
 public class CoreBreakListener implements Listener {
+    private static final String ATTACK_ADJACENT_TERRITORIES_ONLY = "attack_adjacent_territories_only";
+
     private final TerritoryManager territoryManager;
     private final SimpleClans clans;
     private final TerritoryWars plugin;
     private final Map<String, Long> lastDamageTime;
+    private Date raidStartTime;
+    private Date raidEndTime;
+	private final double onlinePercentage;
 
+    /**
+     * Constructor for the CoreBreakListener.
+     * @param territoryManager The territory manager.
+     * @param clans The SimpleClans plugin.
+     * @param plugin The TerritoryWars plugin.
+     */
     public CoreBreakListener(TerritoryManager territoryManager, SimpleClans clans, TerritoryWars plugin) {
         this.territoryManager = territoryManager;
         this.clans = clans;
         this.plugin = plugin;
         this.lastDamageTime = new HashMap<>();
+        loadRaidHours();
+		this.onlinePercentage = plugin.getConfig().getDouble("protection.minimum-players.online-percentage", 25.0);
     }
 
+    /**
+     * Loads the raid hours from the plugin configuration.
+     */
+    private void loadRaidHours() {
+        SimpleDateFormat format = new SimpleDateFormat("HH:mm");
+        try {
+            this.raidStartTime = format.parse(plugin.getConfig().getString("protection.raid-hours.start-time"));
+            this.raidEndTime = format.parse(plugin.getConfig().getString("protection.raid-hours.end-time"));
+        } catch (ParseException e) {
+            plugin.getLogger().severe(plugin.getMessage("error_parsing_raid_hours") + e.getMessage());
+            this.raidStartTime = null;
+            this.raidEndTime = null;
+        }
+    }
+
+    /**
+     * Handles the block break event.
+     * @param event The block break event.
+     */
     @EventHandler(priority = EventPriority.HIGH)
     public void onBlockBreak(BlockBreakEvent event) {
         if (event.isCancelled()) return;
@@ -35,7 +70,7 @@ public class CoreBreakListener implements Listener {
         Territory territory = territoryManager.getTerritoryAt(event.getBlock().getLocation());
         if (territory == null) return;
 
-        // Verifica se o bloco é parte do núcleo
+        // Check if the block is part of the core
         if (!territory.isBlockPartOfCore(event.getBlock().getLocation())) {
             return;
         }
@@ -43,15 +78,15 @@ public class CoreBreakListener implements Listener {
         Player player = event.getPlayer();
         Clan attackerClan = clans.getClanManager().getClanByPlayerUniqueId(player.getUniqueId());
 
-        // Verifica se o jogador pertence a um clã
+        // Check if the player belongs to a clan
         if (attackerClan == null) {
             event.setCancelled(true);
-            player.sendMessage(plugin.getMessage("attack_adjacent_territories_only"));
+            player.sendMessage(plugin.getMessage(ATTACK_ADJACENT_TERRITORIES_ONLY));
             return;
         }
 
         // Check if player has permission
-        if (!attackerClan.isLeader(player.getUniqueId()) && 
+        if (!attackerClan.isLeader(player.getUniqueId()) &&
             !plugin.getClans().getPermissionsManager().has(player, "simpleclans.leader.can-attack")) {
             event.setCancelled(true);
             player.sendMessage(plugin.getMessage("leader_needed_to_attack"));
@@ -68,7 +103,7 @@ public class CoreBreakListener implements Listener {
         // Check if territory is adjacent to attacker's territory
         if (!territoryManager.hasAdjacentTerritory(territory, attackerClan)) {
             event.setCancelled(true);
-            player.sendMessage(plugin.getMessage("attack_adjacent_territories_only"));
+            player.sendMessage(plugin.getMessage(ATTACK_ADJACENT_TERRITORIES_ONLY));
             return;
         }
 
@@ -77,29 +112,25 @@ public class CoreBreakListener implements Listener {
             case RAID_HOURS:
                 if (!isWithinRaidHours()) {
                     event.setCancelled(true);
-                    player.sendMessage(String.format(
-                        plugin.getMessage("raid_hours_only"),
-                        plugin.getRaidStartTime(),
-                        plugin.getRaidEndTime()
-                    ));
+                    player.sendMessage(plugin.getMessage("raid_hours_only")
+                        .replace("%s", plugin.getRaidStartTime())
+                        .replace("%s", plugin.getRaidEndTime()));
                     return;
                 }
                 break;
 
             case MINIMUM_ONLINE_PLAYERS:
-                double requiredPercentage = plugin.getOnlinePercentage() / 100.0;
+                double requiredPercentage = onlinePercentage / 100.0;
                 int onlineCount = (int) territory.getOwner().getMembers().stream()
-                    .map(member -> plugin.getServer().getPlayer(member.getUniqueId()))
-                    .filter(p -> p != null && p.isOnline())
+                    .map(member -> TerritoryWarsUtils.getOnlinePlayer(territory.getOwner(), plugin, member))
+                    .filter(p -> p != null)
                     .count();
                 int totalCount = territory.getOwner().getMembers().size();
-                
+
                 if (onlineCount < totalCount * requiredPercentage) {
                     event.setCancelled(true);
-                    player.sendMessage(String.format(
-                        plugin.getMessage("minimum_online_percentage"),
-                        (int) (requiredPercentage * 100)
-                    ));
+                    player.sendMessage(plugin.getMessage("minimum_online_percentage")
+                        .replace("%d%%", String.valueOf((int) (requiredPercentage * 100))));
                     return;
                 }
                 break;
@@ -134,42 +165,44 @@ public class CoreBreakListener implements Listener {
         }
     }
 
+    /**
+     * Checks if the current time is within raid hours.
+     * @return True if the current time is within raid hours, false otherwise.
+     */
     private boolean isWithinRaidHours() {
-        SimpleDateFormat format = new SimpleDateFormat("HH:mm");
-        try {
-            Date startTime = format.parse(plugin.getRaidStartTime());
-            Date endTime = format.parse(plugin.getRaidEndTime());
-
-            Calendar now = Calendar.getInstance();
-            Calendar start = Calendar.getInstance();
-            Calendar end = Calendar.getInstance();
-
-            start.setTime(startTime);
-            end.setTime(endTime);
-
-            start.set(Calendar.YEAR, now.get(Calendar.YEAR));
-            start.set(Calendar.MONTH, now.get(Calendar.MONTH));
-            start.set(Calendar.DAY_OF_MONTH, now.get(Calendar.DAY_OF_MONTH));
-
-            end.set(Calendar.YEAR, now.get(Calendar.YEAR));
-            end.set(Calendar.MONTH, now.get(Calendar.MONTH));
-            end.set(Calendar.DAY_OF_MONTH, now.get(Calendar.DAY_OF_MONTH));
-
-            return now.after(start) && now.before(end);
-        } catch (ParseException e) {
-            plugin.getLogger().warning(plugin.getMessage("error_parsing_raid_hours") + e.getMessage());
-            return false;
+        if (raidStartTime == null || raidEndTime == null) {
+            return true;
         }
+
+        Calendar now = Calendar.getInstance();
+        Calendar start = Calendar.getInstance();
+        Calendar end = Calendar.getInstance();
+
+        start.setTime(raidStartTime);
+        end.setTime(raidEndTime);
+
+        start.set(Calendar.YEAR, now.get(Calendar.YEAR));
+        start.set(Calendar.MONTH, now.get(Calendar.MONTH));
+        start.set(Calendar.DAY_OF_MONTH, now.get(Calendar.DAY_OF_MONTH));
+
+        end.set(Calendar.YEAR, now.get(Calendar.YEAR));
+        end.set(Calendar.MONTH, now.get(Calendar.MONTH));
+        end.set(Calendar.DAY_OF_MONTH, now.get(Calendar.DAY_OF_MONTH));
+
+        return now.after(start) && now.before(end);
     }
 
+    /**
+     * Handles the core destroyed event.
+     * @param territory The territory that was destroyed.
+     * @param attackerClan The clan that destroyed the core.
+     */
     private void handleCoreDestroyed(Territory territory, Clan attackerClan) {
         // Broadcast conquest message
-       String message = String.format(
-            plugin.getMessage("territory_conquered"),
-            territory.getGridX() * 3 * 16,
-            territory.getGridZ() * 3 * 16,
-            attackerClan.getName()
-        );
+       String message = plugin.getMessage("territory_conquered")
+            .replace("%d", String.valueOf(territory.getGridX() * plugin.getTerritoryManager().getGridSize() * plugin.getTerritoryManager().getBlockSize()))
+            .replace("%d", String.valueOf(territory.getGridZ() * plugin.getTerritoryManager().getGridSize() * plugin.getTerritoryManager().getBlockSize()))
+            .replace("%s", attackerClan.getName());
 
         // Notify both clans
         sendMessageToClanMembers(territory.getOwner(), message);
@@ -188,11 +221,16 @@ public class CoreBreakListener implements Listener {
         territoryManager.saveTerritories();
     }
 
+    /**
+     * Sends a message to all online members of a clan.
+     * @param clan The clan to send the message to.
+     * @param message The message to send.
+     */
     private void sendMessageToClanMembers(Clan clan, String message) {
         if (clan == null) return;
         clan.getMembers().stream()
-            .map(member -> plugin.getServer().getPlayer(member.getUniqueId()))
-            .filter(p -> p != null && p.isOnline())
+            .map(member -> TerritoryWarsUtils.getOnlinePlayer(clan, plugin, member))
+            .filter(p -> p != null)
             .forEach(p -> p.sendMessage(message));
     }
 }

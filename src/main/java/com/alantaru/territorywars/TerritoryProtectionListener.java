@@ -108,37 +108,28 @@ public class TerritoryProtectionListener implements Listener {
         });
     }
 
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onPistonExtend(BlockPistonExtendEvent event) {
-        if (event.isCancelled()) return;
-        for (Block block : event.getBlocks()) {
-            Territory fromTerritory = territoryManager.getTerritoryAt(block.getLocation());
-            Territory toTerritory = territoryManager.getTerritoryAt(
-                block.getRelative(event.getDirection()).getLocation()
-            );
-            
-            if (fromTerritory != toTerritory) {
-                event.setCancelled(true);
-                return;
-            }
-        }
-    }
+	@EventHandler(priority = EventPriority.HIGH)
+	public void onPistonExtend(BlockPistonExtendEvent event) {
+		handlePistonEvent(event);
+	}
 
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onPistonRetract(BlockPistonRetractEvent event) {
-        if (event.isCancelled()) return;
-        for (Block block : event.getBlocks()) {
-            Territory fromTerritory = territoryManager.getTerritoryAt(block.getLocation());
-            Territory toTerritory = territoryManager.getTerritoryAt(
-                block.getRelative(event.getDirection()).getLocation()
-            );
-            
-            if (fromTerritory != toTerritory) {
-                event.setCancelled(true);
-                return;
-            }
-        }
-    }
+	@EventHandler(priority = EventPriority.HIGH)
+	public void onPistonRetract(BlockPistonRetractEvent event) {
+		handlePistonEvent(event);
+	}
+
+	private void handlePistonEvent(BlockPistonEvent event) {
+		if (event.isCancelled()) return;
+		for (Block block : event.getBlocks()) {
+			Territory fromTerritory = territoryManager.getTerritoryAt(block.getLocation());
+			Territory toTerritory = territoryManager.getTerritoryAt(block.getRelative(event.getDirection()).getLocation());
+
+			if (fromTerritory != toTerritory) {
+				event.setCancelled(true);
+				return;
+			}
+		}
+	}
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerBucketEmpty(PlayerBucketEmptyEvent event) {
@@ -203,51 +194,33 @@ public class TerritoryProtectionListener implements Listener {
         }
     }
 
-    private boolean canBuild(Player player, Location location, Territory territory) {
-        RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
-        RegionQuery query = container.createQuery();
-        ApplicableRegionSet set = query.getApplicableRegions(BukkitAdapter.adapt(location));
-        if (player == null) {
-            return set.testState(null, Flags.BUILD);
-        }
-        Clan playerClan = plugin.getClans().getClanManager().getClanByPlayerUniqueId(player.getUniqueId());
-        Clan territoryOwner = territory.getOwner();
-        return playerClan != null && playerClan.equals(territoryOwner) && set.testState(plugin.getWorldGuard().wrapPlayer(player), Flags.BUILD);
-    }
+	private boolean canBuild(Player player, Location location, Territory territory) {
+		return canInteract(player, location, territory, Flags.BUILD);
+	}
 
-    private boolean canBreak(Player player, Location location, Territory territory) {
-        RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
-        RegionQuery query = container.createQuery();
-        ApplicableRegionSet set = query.getApplicableRegions(BukkitAdapter.adapt(location));
-        if (player == null) {
-            return set.testState(null, Flags.BLOCK_BREAK);
-        }
-        Clan playerClan = plugin.getClans().getClanManager().getClanByPlayerUniqueId(player.getUniqueId());
-        Clan territoryOwner = territory.getOwner();
-        return playerClan != null && playerClan.equals(territoryOwner) && set.testState(plugin.getWorldGuard().wrapPlayer(player), Flags.BLOCK_BREAK);
-    }
+	private boolean canBreak(Player player, Location location, Territory territory) {
+		return canInteract(player, location, territory, Flags.BLOCK_BREAK);
+	}
 
-    private boolean canUseBuckets(Player player, Location location, Territory territory) {
-        RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
-        RegionQuery query = container.createQuery();
-        ApplicableRegionSet set = query.getApplicableRegions(BukkitAdapter.adapt(location));
-        if (player == null) {
-            return set.testState(null, Flags.USE);
-        }
-        Clan playerClan = plugin.getClans().getClanManager().getClanByPlayerUniqueId(player.getUniqueId());
-        Clan territoryOwner = territory.getOwner();
-        return playerClan != null && playerClan.equals(territoryOwner) && set.testState(plugin.getWorldGuard().wrapPlayer(player), Flags.USE);
-    }
+	private boolean canUseBuckets(Player player, Location location, Territory territory) {
+		return canInteract(player, location, territory, Flags.USE);
+	}
 
-    private boolean canAttack(Player player, Location location, Territory territory) {
-        RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
-        RegionQuery query = container.createQuery();
-        ApplicableRegionSet set = query.getApplicableRegions(BukkitAdapter.adapt(location));
-        if (player == null) {
-            return set.testState(null, Flags.PVP);
-        }
-        Clan playerClan = plugin.getClans().getClanManager().getClanByPlayerUniqueId(player.getUniqueId());
-        Clan territoryOwner = territory.getOwner();
-        return playerClan != null && playerClan.equals(territoryOwner) && set.testState(plugin.getWorldGuard().wrapPlayer(player), Flags.PVP);
-    }
+	private boolean canAttack(Player player, Location location, Territory territory) {
+		return canInteract(player, location, territory, Flags.PVP);
+	}
+
+	private boolean canInteract(Player player, Location location, Territory territory, StateFlag flag) {
+		RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
+		RegionQuery query = container.createQuery();
+		ApplicableRegionSet set = query.getApplicableRegions(BukkitAdapter.adapt(location));
+
+		if (player == null) {
+			return set.testState(null, flag); // Default to BUILD flag for non-player checks
+		}
+
+		Clan playerClan = plugin.getClans().getClanManager().getClanByPlayerUniqueId(player.getUniqueId());
+		Clan territoryOwner = territory.getOwner();
+		return playerClan != null && playerClan.equals(territoryOwner) && set.testState(plugin.getWorldGuard().wrapPlayer(player), flag);
+	}
 }

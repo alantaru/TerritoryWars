@@ -7,32 +7,36 @@ import org.bukkit.World;
 
 import java.lang.reflect.Type;
 
+/**
+ * GSON adapter for serializing and deserializing Bukkit Location objects.
+ */
 public class LocationAdapter implements JsonSerializer<Location>, JsonDeserializer<Location> {
 
-    public LocationAdapter() {
+    @Override
+    public JsonElement serialize(Location location, Type type, JsonSerializationContext context) {
+        JsonObject json = new JsonObject();
+        
+        json.addProperty("world", location.getWorld().getName());
+        json.addProperty("x", location.getX());
+        json.addProperty("y", location.getY());
+        json.addProperty("z", location.getZ());
+        json.addProperty("yaw", location.getYaw());
+        json.addProperty("pitch", location.getPitch());
+        return json;
     }
 
     @Override
-    public JsonElement serialize(Location location, Type type, JsonSerializationContext jsonSerializationContext) {
-        JsonObject obj = new JsonObject();
-        obj.addProperty("world", location.getWorld().getName());
-        obj.addProperty("x", location.getX());
-        obj.addProperty("y", location.getY());
-        obj.addProperty("z", location.getZ());
-        obj.addProperty("yaw", location.getYaw());
-        obj.addProperty("pitch", location.getPitch());
-        return obj;
-    }
-
-    @Override
-    public Location deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
-        JsonObject obj = jsonElement.getAsJsonObject();
-        World world = Bukkit.getWorld(obj.get("world").getAsString());
-        double x = obj.get("x").getAsDouble();
-        double y = obj.get("y").getAsDouble();
-        double z = obj.get("z").getAsDouble();
-        float yaw = obj.get("yaw").getAsFloat();
-        float pitch = obj.get("pitch").getAsFloat();
+    public Location deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext context) throws JsonParseException {
+        JsonObject json = jsonElement.getAsJsonObject();
+        World world = Bukkit.getWorld(json.get("world").getAsString());
+        if (world == null) {
+            throw new JsonParseException("World not found");
+        }
+        double x = json.get("x").getAsDouble();
+        double y = json.get("y").getAsDouble();
+        double z = json.get("z").getAsDouble();
+        float yaw = json.get("yaw").getAsFloat();
+        float pitch = json.get("pitch").getAsFloat();
         return new Location(world, x, y, z, yaw, pitch);
     }
 }

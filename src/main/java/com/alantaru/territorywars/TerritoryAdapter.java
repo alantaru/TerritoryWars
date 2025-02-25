@@ -1,26 +1,20 @@
 package com.alantaru.territorywars;
 
+import com.alantaru.territorywars.exception.ClanNotFoundException;
 import com.google.gson.*;
 import net.sacredlabyrinth.phaed.simpleclans.Clan;
-import net.sacredlabyrinth.phaed.simpleclans.SimpleClans;
-import net.sacredlabyrinth.phaed.simpleclans.managers.ClanManager;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 public class TerritoryAdapter implements JsonSerializer<Territory>, JsonDeserializer<Territory> {
+
     private final TerritoryWars plugin;
 
     public TerritoryAdapter(TerritoryWars plugin) {
         this.plugin = plugin;
     }
-
     @Override
     public JsonElement serialize(Territory territory, Type type, JsonSerializationContext context) {
         JsonObject obj = new JsonObject();
@@ -39,7 +33,8 @@ public class TerritoryAdapter implements JsonSerializer<Territory>, JsonDeserial
         obj.addProperty("displayName", territory.getDisplayName());
         obj.addProperty("description", territory.getDescription());
         obj.addProperty("banner", territory.getBanner());
-        obj.addProperty("name", territory.getName());
+		obj.addProperty("name", territory.getName());
+
 
         JsonArray adjacentTerritories = new JsonArray();
         for (UUID adjacentId : territory.getAdjacentTerritories()) {
@@ -62,13 +57,19 @@ public class TerritoryAdapter implements JsonSerializer<Territory>, JsonDeserial
 
         int gridX = obj.get("gridX").getAsInt();
         int gridZ = obj.get("gridZ").getAsInt();
-        ClanManager clanManager = SimpleClans.getInstance().getClanManager();
-		String clanTag = obj.get("owner").getAsString();
-        Clan owner =  clanManager.getClan(clanTag);
+        String clanTag = obj.get("owner").getAsString();
+        Clan owner = null;
+        if(clanTag != null){
+            owner = plugin.getSimpleClans().getClanManager().getClan(clanTag);
+            if (owner == null) {
+                throw new ClanNotFoundException("Clan not found: " + clanTag);
+            }
+        }
+
         Location coreLocation = context.deserialize(obj.get("coreLocation"), Location.class);
         double creationCost = obj.get("creationCost").getAsDouble();
         double resistanceMultiplier = obj.get("resistanceMultiplier").getAsDouble();
-        String name = obj.get("name").getAsString();
+		String name = obj.get("name").getAsString();
 
         Territory territory = new Territory(gridX, gridZ, owner, coreLocation, creationCost, resistanceMultiplier, name);
 
@@ -88,12 +89,13 @@ public class TerritoryAdapter implements JsonSerializer<Territory>, JsonDeserial
         }
         territory.setAdjacentTerritories(adjacentTerritories);
 
+
         List<Location> coreBlocks = new ArrayList<>();
         JsonArray coreBlocksArray = obj.get("coreBlocks").getAsJsonArray();
         for (JsonElement element : coreBlocksArray) {
             coreBlocks.add(context.deserialize(element, Location.class));
         }
-        // No need to manually add core blocks, as they are already part of the Territory object
+        // No need to manually add the core blocks, as they are already part of the Territory object
 
         return territory;
     }

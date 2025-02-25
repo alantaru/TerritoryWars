@@ -1,113 +1,76 @@
-# TerritoryWars
+# Territory Wars
 
-Plugin de Guerra de Territórios integrado com SimpleClans para servidores Minecraft.
+Um plugin para gerenciamento de guerras territoriais entre facções em jogos.
 
-## Características
+## Visão Geral
 
-### Sistema de Territórios
-- Territórios são grids de 3x3 chunks
-- Cada território possui um núcleo de 2x2x2 blocos de obsidian
-- Clãs podem dominar territórios quebrando o núcleo
-- Novos territórios devem ser adjacentes aos existentes
+Este plugin permite gerenciar guerras territoriais entre diferentes facções em um ambiente de jogo. Ele oferece funcionalidades para criar territórios, atribuí-los a facções e gerenciar conflitos entre elas.
 
-### Proteção
-Três modos de proteção configuráveis:
-1. Guerra Infinita
-   - Permite ataques a qualquer momento
-   - Apenas territórios adjacentes podem ser atacados
+## Funcionalidades
 
-2. Horário de Raid
-   - Ataques permitidos apenas em horários específicos
-   - Configurável no config.yml
-
-3. Mínimo de Players Online
-   - Requer uma porcentagem mínima de defensores online
-   - Porcentagem configurável no config.yml
-
-### Economia
-- Custo inicial para criar o primeiro território
-- Custo para expansão de territórios
-- Tributo periódico por território
-- Tributo dividido entre membros do clã
-- Perda do valor investido ao perder território
-
-### Integração com Dynmap
-- Visualização de territórios no mapa
-- Informações personalizáveis (nome, descrição, bandeira)
-- Linhas de adjacência entre territórios
-- Estilo configurável no config.yml
+- Criação e gerenciamento de territórios
+- Sistema de facções com hierarquia de membros
+- Mecanismo de invasão e defesa de territórios
+- Sistema de pontuação e recompensas
 
 ## Instalação
 
-1. Requisitos:
-   - SimpleClans
-   - Vault (com plugin de economia)
-   - Dynmap (opcional)
-
-2. Instalação:
-   - Coloque o arquivo .jar na pasta plugins
-   - Reinicie o servidor
-   - Configure o plugin em config.yml
-
-## Comandos
-
-- `/tw create` - Cria um território
-- `/tw info` - Mostra informações do território
-- `/tw movecore` - Move o núcleo
-- `/tw setname <nome>` - Define nome do território
-- `/tw setdesc <desc>` - Define descrição
-- `/tw setbanner <url>` - Define bandeira
-- `/tw mode <modo>` - Define modo de proteção
-- `/tw reload` - Recarrega o plugin
-
-## Permissões
-
-- `territorywars.create` - Criar territórios
-- `territorywars.info` - Ver informações
-- `territorywars.movecore` - Mover núcleo
-- `territorywars.modify` - Modificar território
-- `territorywars.mode` - Alterar modo de proteção
-- `territorywars.*` - Todas as permissões
+1. Baixe o plugin da release mais recente
+2. Coloque o arquivo JAR na pasta `plugins` do seu servidor
+3. Reinicie o servidor
+4. Configure o plugin através do arquivo `config.yml`
 
 ## Configuração
 
-Principais configurações em config.yml:
+Detalhes sobre como configurar o plugin podem ser encontrados no arquivo `config.yml`.
 
-```yaml
-economy:
-  first-territory-cost: 10000.0
-  territory-cost: 5000.0
-  tribute:
-    per-territory: 0.1  # 10% do custo
-    interval: 1440      # 24 horas
+## Comandos
 
-protection:
-  raid-hours:
-    start-time: "18:00"
-    end-time: "23:00"
-  minimum-players:
-    online-percentage: 30.0
+| Comando | Permissão | Descrição |
+|---------|-----------|-----------|
+| `/tw help` | territory.help | Mostra ajuda sobre os comandos do plugin |
+| `/tw create <nome>` | territory.create | Cria um novo território |
+| `/tw claim` | territory.claim | Reivindica o território onde o jogador está |
+| `/tw info` | territory.info | Mostra informações sobre o território atual |
 
-core:
-  resistance-multiplier: 5.0
-  required-hits: 50
-  damage-interval: 2000
-```
+## Permissões
+
+- `territory.admin` - Acesso a todos os comandos administrativos
+- `territory.create` - Permissão para criar territórios
+- `territory.claim` - Permissão para reivindicar territórios
+- `territory.info` - Permissão para ver informações
+
+## Arquitetura do Plugin
+
+O plugin é construído com uma arquitetura modular:
+
+1. **Core**: Contém as classes principais e gerenciadores
+2. **Model**: Define as entidades principais como Territory, Faction, etc.
+3. **Events**: Gerencia os eventos do jogo relacionados a territórios
+4. **Commands**: Implementa os comandos disponíveis
+5. **API**: Fornece interfaces para extensão por outros plugins
 
 ## Desenvolvimento
 
-Para compilar o plugin:
+### Pré-requisitos
+- Java 17 ou superior
+- Maven 3.6 ou superior
 
+### Compilar
 ```bash
 mvn clean package
 ```
 
-O arquivo .jar será gerado em `target/territorywars-1.0.0.jar`
+## Contribuição
 
-## Suporte
+Contribuições são bem-vindas! Por favor, siga estas etapas:
 
-Para reportar bugs ou sugerir melhorias, abra uma issue no GitHub.
+1. Faça um fork do repositório
+2. Crie um branch para sua feature (`git checkout -b feature/nova-feature`)
+3. Commit suas mudanças (`git commit -am 'Adiciona nova feature'`)
+4. Push para o branch (`git push origin feature/nova-feature`)
+5. Crie um Pull Request
 
 ## Licença
 
-Este projeto está licenciado sob a licença MIT.
+Este projeto está licenciado sob a licença MIT - veja o arquivo LICENSE para detalhes.

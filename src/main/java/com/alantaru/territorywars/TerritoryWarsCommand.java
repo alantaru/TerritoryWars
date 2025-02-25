@@ -8,6 +8,7 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -18,9 +19,9 @@ public class TerritoryWarsCommand implements CommandExecutor, TabCompleter {
     private final TerritoryWars plugin;
     private final TerritoryManager territoryManager;
 
-    public TerritoryWarsCommand(TerritoryWars plugin, TerritoryManager territoryManager) {
+    public TerritoryWarsCommand(TerritoryWars plugin) {
         this.plugin = plugin;
-        this.territoryManager = territoryManager;
+        this.territoryManager = plugin.getTerritoryManager();
     }
 
     @Override
@@ -54,11 +55,7 @@ public class TerritoryWarsCommand implements CommandExecutor, TabCompleter {
             }
 
             String territoryName = args[1];
-            String displayName = args[2];
-
-            for (int i = 3; i < args.length; i++) {
-                displayName += " " + args[i];
-            }
+            String displayName = String.join(" ", Arrays.copyOfRange(args, 2, args.length));
 
             Territory territory = territoryManager.getTerritoryByName(territoryName);
 
@@ -89,11 +86,7 @@ public class TerritoryWarsCommand implements CommandExecutor, TabCompleter {
             }
 
             String territoryName = args[1];
-            String description = args[2];
-
-            for (int i = 3; i < args.length; i++) {
-                description += " " + args[i];
-            }
+            String description = String.join(" ", Arrays.copyOfRange(args, 2, args.length));
 
             Territory territory = territoryManager.getTerritoryByName(territoryName);
             if (territory == null) {
@@ -178,7 +171,11 @@ public class TerritoryWarsCommand implements CommandExecutor, TabCompleter {
             String clanName = args[1];
             String territoryName = args[2];
 
-            // Placeholder for clan existence check
+            Clan clan = plugin.getClans().getClanManager().getClan(clanName);
+            if (clan == null) {
+                sender.sendMessage("§cClan " + clanName + " not found.");
+                return true;
+            }
 
             try {
                 if (!(sender instanceof Player)) {
@@ -285,13 +282,18 @@ public class TerritoryWarsCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
+        if (args[0].equalsIgnoreCase("top")) {
+            sendDominantClanRanking(sender);
+            return true;
+        }
+
         return false;
     }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return List.of("create", "delete", "list", "info", "reload", "setdisplayname", "setdescription", "capture");
+            return List.of("create", "delete", "list", "info", "reload", "setdisplayname", "setdescription", "capture", "top");
         } else if (args.length == 2 && args[0].equalsIgnoreCase("info")) {
             return territoryManager.getTerritories().values().stream()
                     .map(Territory::getName)

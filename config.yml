@@ -1,3 +1,9 @@
+core:
+  structure:
+    material: OBSIDIAN
+    size: 2
+database:
+  name: database.db
 economy:
   first-territory-cost: 15000.0
   territory-cost: 5000.0
