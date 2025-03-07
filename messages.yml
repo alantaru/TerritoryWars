@@ -27,6 +27,34 @@ plugin_enabled: "TerritoryWars has been enabled successfully!"
 plugin_disabled: "TerritoryWars has been disabled!"
 simpleclans_not_found: "SimpleClans not found!"
 vault_economy_not_found: "Vault Economy not found!"
+worldguard_not_found: "WorldGuard not found! This plugin requires WorldGuard to function properly."
 dynmap_not_found: "Dynmap not found, territory visualization disabled."
 dynmap_failed_init: "Failed to initialize Dynmap integration."
 could_not_find_leader: "Could not find leader to refund territory abandonment cost to."
+
+# Territory titles and messages
+enemy_territory_title: "§c§lTerritório Inimigo"
+ally_territory_title: "§a§lTerritório Aliado"
+wildlands_title: "§7§lTerras Selvagens"
+left_own_territory: "§7Você saiu do seu território"
+left_enemy_territory: "§7Você saiu de um território inimigo"
+
+# Territory protection messages
+cannot_break_decorations_in_territory: "§cVocê não pode quebrar decorações neste território!"
+cannot_cause_damage_in_territory: "§cVocê não pode causar dano neste território!"
+cannot_break_blocks_in_territory: "§cVocê não pode quebrar blocos neste território!"
+cannot_build_in_territory: "§cVocê não pode construir neste território!"
+cannot_place_block_type: "§cEste tipo de bloco não pode ser colocado em territórios!"
+cannot_use_buckets_in_territory: "§cVocê não pode usar baldes neste território!"
+
+# Clan ranking
+dominant_clan_ranking_header: "§6=== Ranking de Clãs Dominantes ==="
+
+# Attack messages
+attack_adjacent_territories_only: "§cVocê só pode atacar territórios adjacentes aos seus!"
+leader_needed_to_attack: "§cApenas líderes e membros autorizados podem atacar territórios!"
+cannot_attack_own_territory: "§cVocê não pode atacar seu próprio território!"
+raid_hours_only: "§cAtaques só são permitidos entre %s e %s!"
+minimum_online_percentage: "§cÉ necessário que pelo menos %d%% dos membros do clã defensor estejam online!"
+territory_conquered: "§aO território em X:%d Z:%d foi conquistado pelo clã %s!"
+error_parsing_raid_hours: "Erro ao analisar horários de raid: "
