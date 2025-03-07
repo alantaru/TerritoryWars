@@ -30,7 +30,7 @@ public class TerritoryManager {
         GsonBuilder builder = new GsonBuilder()
                 .setPrettyPrinting()
                 .registerTypeAdapter(Location.class, new LocationAdapter())
-                .registerTypeAdapter(Territory.class, new TerritoryAdapter());
+                .registerTypeAdapter(Territory.class, new TerritoryAdapter(plugin));
 
         this.gson = builder.create();
         loadTerritories();
@@ -266,85 +266,4 @@ public class TerritoryManager {
     public void save() {
         saveTerritories();
     }
-
-    private static class LocationAdapter implements JsonSerializer<Location>, JsonDeserializer<Location> {
-        @Override
-        public JsonElement serialize(Location location, Type type, JsonSerializationContext context) {
-            JsonObject json = new JsonObject();
-            json.addProperty("world", location.getWorld().getName());
-            json.addProperty("x", location.getX());
-            json.addProperty("y", location.getY());
-            json.addProperty("z", location.getZ());
-            json.addProperty("yaw", location.getYaw());
-            json.addProperty("pitch", location.getPitch());
-            return json;
-        }
-
-        @Override
-        public Location deserialize(JsonElement element, Type type, JsonDeserializationContext context) throws JsonParseException {
-            JsonObject json = element.getAsJsonObject();
-            World world = Bukkit.getWorld(json.get("world").getAsString());
-            if (world == null) {
-                throw new JsonParseException("World not found");
-            }
-            double x = json.get("x").getAsDouble();
-            double y = json.get("y").getAsDouble();
-            double z = json.get("z").getAsDouble();
-            float yaw = json.get("yaw").getAsFloat();
-            float pitch = json.get("pitch").getAsFloat();
-            return new Location(world, x, y, z, yaw, pitch);
-        }
-    }
-
-    private static class TerritoryAdapter implements JsonSerializer<Territory>, JsonDeserializer<Territory> {
-        @Override
-        public JsonElement serialize(Territory territory, Type type, JsonSerializationContext context) {
-            JsonObject json = new JsonObject();
-            json.addProperty("id", territory.getId().toString());
-            json.addProperty("gridX", territory.getGridX());
-            json.addProperty("gridZ", territory.getGridZ());
-            json.addProperty("clanId", territory.getOwner().getTag());
-            json.add("coreLocation", context.serialize(territory.getCoreLocation(), Location.class));
-            json.addProperty("creationCost", territory.getCreationCost());
-            json.addProperty("resistanceMultiplier", territory.getResistanceMultiplier());
-            json.addProperty("protectionMode", territory.getProtectionMode().name());
-            json.addProperty("coreHealth", territory.getCoreHealth());
-            json.addProperty("lastDamageTime", territory.getLastDamageTime());
-            json.addProperty("lastTributePaid", territory.getLastTributePaid());
-            json.addProperty("displayName", territory.getDisplayName());
-            json.addProperty("description", territory.getDescription());
-            json.addProperty("banner", territory.getBanner());
-            return json;
-        }
-
-        @Override
-        public Territory deserialize(JsonElement element, Type type, JsonDeserializationContext context) throws JsonParseException {
-            JsonObject json = element.getAsJsonObject();
-            int gridX = json.get("gridX").getAsInt();
-            int gridZ = json.get("gridZ").getAsInt();
-
-            String clanTag = json.get("clanId").getAsString();
-            ClanManager clanManager = TerritoryWars.getInstance().getClans().getClanManager();
-            Clan clan = clanManager.getClan(clanTag);
-            if (clan == null) {
-                throw new JsonParseException("Clan not found: " + clanTag);
-            }
-
-            Location coreLoc = context.deserialize(json.get("coreLocation"), Location.class);
-            double creationCost = json.get("creationCost").getAsDouble();
-            double resistanceMultiplier = json.get("resistanceMultiplier").getAsDouble();
-            String displayName = json.get("displayName").getAsString();
-
-            Territory territory = new Territory(gridX, gridZ, clan, coreLoc, creationCost, resistanceMultiplier, displayName);
-            territory.setProtectionMode(ProtectionMode.valueOf(json.get("protectionMode").getAsString()));
-            territory.setCoreHealth(json.get("coreHealth").getAsInt());
-            territory.setLastDamageTime(json.get("lastDamageTime").getAsLong());
-            territory.setLastTributePaid(json.get("lastTributePaid").getAsLong());
-            territory.setDisplayName(displayName);
-            territory.setDescription(json.get("description").getAsString());
-            territory.setBanner(json.get("banner").getAsString());
-
-            return territory;
-        }
-    }    
 }

@@ -353,18 +353,37 @@ public class TerritoryWarsCommand implements CommandExecutor, TabCompleter {
     }
 
     private void sendDominantClanRanking(CommandSender sender) {
-        List<Clan> rankedClans = plugin.getTerritoryManager().getTerritories().values().stream()
-                .collect(Collectors.groupingBy(Territory::getOwner, Collectors.counting()))
-                .entrySet().stream()
+        // Get the dominant clan from the TerritoryManager
+        Clan dominantClan = plugin.getTerritoryManager().getDominantClan();
+        
+        // Get all clans with territories
+        Map<Clan, Long> clanTerritories = plugin.getTerritoryManager().getTerritories().values().stream()
+                .collect(Collectors.groupingBy(Territory::getOwner, Collectors.counting()));
+        
+        // Sort clans by territory count
+        List<Map.Entry<Clan, Long>> rankedClans = clanTerritories.entrySet().stream()
                 .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
-                .map(Map.Entry::getKey)
                 .limit(10)
                 .collect(Collectors.toList());
-
+        
         sender.sendMessage(plugin.getMessage("dominant_clan_ranking_header"));
+        
+        if (rankedClans.isEmpty()) {
+            sender.sendMessage(plugin.getMessage("no_territories_found"));
+            return;
+        }
+        
         for (int i = 0; i < rankedClans.size(); i++) {
-            Clan clan = rankedClans.get(i);
-            sender.sendMessage(String.format("%d. %s - %d territories", i + 1, clan.getName(), plugin.getTerritoryManager().getTerritories().values().stream().filter(t -> t.getOwner().equals(clan)).count()));
+            Map.Entry<Clan, Long> entry = rankedClans.get(i);
+            Clan clan = entry.getKey();
+            long count = entry.getValue();
+            
+            // Highlight the dominant clan
+            String format = (clan.equals(dominantClan)) ? 
+                "§6%d. %s - %d territories §e(Dominant)" : 
+                "%d. %s - %d territories";
+            
+            sender.sendMessage(String.format(format, i + 1, clan.getName(), count));
         }
     }
 }
