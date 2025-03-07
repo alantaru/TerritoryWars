@@ -1,5 +1,5 @@
 # Messages configuration file
-available_subcommands: "Available subcommands: create, delete, list, info, reload, setdisplayname, setdescription"
+available_subcommands: "Available subcommands: create, delete, list, info, reload, setdisplayname, setdescription, capture, analyze"
 territorywars_reloaded: "TerritoryWars configuration reloaded."
 command_only_by_player: "This command can only be used by a player."
 setdisplayname_usage: "§cUsage: /tw setdisplayname <territoryName> <displayName>"
@@ -58,3 +58,8 @@ raid_hours_only: "§cAtaques só são permitidos entre %s e %s!"
 minimum_online_percentage: "§cÉ necessário que pelo menos %d%% dos membros do clã defensor estejam online!"
 territory_conquered: "§aO território em X:%d Z:%d foi conquistado pelo clã %s!"
 error_parsing_raid_hours: "Erro ao analisar horários de raid: "
+
+# Analyze command messages
+no_permission_analyze: "§cYou do not have permission to analyze territories."
+territory_distribution_header: "§6=== Territory Distribution ==="
+most_contested_territories_header: "§6=== Most Contested Territories ==="

@@ -285,13 +285,47 @@ public class TerritoryWarsCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
+        if (args[0].equalsIgnoreCase("analyze")) {
+            if (!sender.hasPermission("territorywars.analyze")) {
+                sender.sendMessage(plugin.getMessage("no_permission_analyze"));
+                return true;
+            }
+
+            // Send the dominant clan ranking
+            sendDominantClanRanking(sender);
+
+            // Territory distribution analysis
+            sender.sendMessage(plugin.getMessage("territory_distribution_header"));
+            Map<String, Long> territoryDistribution = territoryManager.getTerritories().values().stream()
+                    .collect(Collectors.groupingBy(t -> t.getOwner().getName(), Collectors.counting()));
+            
+            territoryDistribution.entrySet().stream()
+                    .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                    .forEach(entry -> {
+                        sender.sendMessage(String.format("§e%s: §f%d territories", entry.getKey(), entry.getValue()));
+                    });
+
+            // Most contested territories analysis
+            sender.sendMessage(plugin.getMessage("most_contested_territories_header"));
+            territoryManager.getTerritories().values().stream()
+                    .sorted(Comparator.comparingLong(Territory::getLastDamageTime).reversed())
+                    .limit(5)
+                    .forEach(territory -> {
+                        sender.sendMessage(String.format("§e%s: §fLast contested %d ms ago", 
+                            territory.getDisplayName(), 
+                            System.currentTimeMillis() - territory.getLastDamageTime()));
+                    });
+
+            return true;
+        }
+
         return false;
     }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return List.of("create", "delete", "list", "info", "reload", "setdisplayname", "setdescription", "capture");
+            return List.of("create", "delete", "list", "info", "reload", "setdisplayname", "setdescription", "capture", "analyze");
         } else if (args.length == 2 && args[0].equalsIgnoreCase("info")) {
             return territoryManager.getTerritories().values().stream()
                     .map(Territory::getName)
