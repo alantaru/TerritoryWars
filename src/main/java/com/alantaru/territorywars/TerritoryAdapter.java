@@ -62,7 +62,7 @@ public class TerritoryAdapter implements JsonSerializer<Territory>, JsonDeserial
 
         int gridX = obj.get("gridX").getAsInt();
         int gridZ = obj.get("gridZ").getAsInt();
-        ClanManager clanManager = SimpleClans.getInstance().getClanManager();
+        ClanManager clanManager = plugin.getClans().getClanManager();
 		String clanTag = obj.get("owner").getAsString();
         Clan owner =  clanManager.getClan(clanTag);
         Location coreLocation = context.deserialize(obj.get("coreLocation"), Location.class);
@@ -72,7 +72,14 @@ public class TerritoryAdapter implements JsonSerializer<Territory>, JsonDeserial
 
         Territory territory = new Territory(gridX, gridZ, owner, coreLocation, creationCost, resistanceMultiplier, name);
 
-        territory.setId(UUID.fromString(obj.get("id").getAsString()));
+        // Use reflection to set the id field since there's no setter
+        try {
+            java.lang.reflect.Field idField = Territory.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(territory, UUID.fromString(obj.get("id").getAsString()));
+        } catch (Exception e) {
+            throw new JsonParseException("Failed to set territory ID: " + e.getMessage());
+        }
         territory.setProtectionMode(ProtectionMode.valueOf(obj.get("protectionMode").getAsString()));
         territory.setCoreHealth(obj.get("coreHealth").getAsInt());
         territory.setLastDamageTime(obj.get("lastDamageTime").getAsLong());

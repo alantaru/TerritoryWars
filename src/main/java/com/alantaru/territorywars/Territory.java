@@ -171,11 +171,6 @@ public class Territory {
         return id;
     }
 
-     public void setId(UUID id) {
-        // This method is intentionally left blank as the ID should not be changed after creation.
-        // If you need to change the ID, consider creating a new Territory object instead.
-    }
-
     public int getGridX() {
         return gridX;
     }
